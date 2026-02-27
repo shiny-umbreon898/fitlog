@@ -3,6 +3,8 @@ from flask import Blueprint, jsonify, request
 from . import db
 from .models import User, Workout, Meal
 
+import bcrypt # For password hashing
+
 api_bp = Blueprint("api", __name__)
 
 ## TODO: Add authentication routes (register, login, logout) and CRUD routes for workouts and meals.
@@ -23,11 +25,29 @@ def hello():
 
 @api_bp.route("/users", methods=["POST"])
 def create_user():
+
+    # Create a new user with the provided username, email and password. The password should be hashed before storing in the database.
+    # Expected JSON body: {"username": "aaron", "email": "aaron@email.com", password": "password123"}
+
     data = request.get_json()
-    user = User(username=data["username"])
+
+    # Validate input
+    if not data or not all(i in data for i in("username", "email", "password")):
+        return jsonify({"error": "username, email and password required"}), 400
+
+    # Password hashing using bcrypt before storing in the database
+    hashed_password = bcrypt.hashpw(data["password"].encode('utf-8'), bcrypt.gensalt())
+
+    user = User(username=data["username"],
+                email=data["email"],
+                password=hashed_password)
+
     db.session.add(user)
     db.session.commit()
-    return jsonify({"id": user.id, "username": user.username})
+
+    return jsonify({"id": user.id, 
+                    "username": user.username,
+                    "email" : user.email}), 201
 
 
 

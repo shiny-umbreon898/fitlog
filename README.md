@@ -13,6 +13,7 @@ Architecture: App Factory pattern and Blueprints for routing
 2. Clone the repository
 3. Install dependancies using pip - run the following command in the terminal
 	pip install flask flask-cors flask-sqlalchemy flask-migrate
+	pip install bcrypt # for password hashing
 
 	(will change to pip freeze > requirements.txt in the future for easier dependency management))
 
