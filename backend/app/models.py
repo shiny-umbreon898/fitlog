@@ -15,6 +15,7 @@ class Workout(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
     duration = db.Column(db.Integer, nullable=False)  # Duration in minutes
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)  # Foreign key to user
     def __repr__(self):
         return f"<Workout {self.name}>"
 
@@ -23,7 +24,9 @@ class Workout(db.Model):
 class Meal(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
+    description = db.Column(db.String(255), nullable=True)
     calories = db.Column(db.Integer, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)  # Foreign key to user
     def __repr__(self):
         return f"<Meal {self.name}>"
 
