@@ -39,6 +39,15 @@ when running, press Ctrl+C to stop the server
 http://127.0.0.1:5000/api/ test endpoint to verify backend is running
 
 
+
+## React setup
+1. install node.js and npm
+2. cd into the frontend directory
+3. npm start to start the React development server
+
+
+
+
 # Notes
 Flask-SQLAlchemy is used for database management (ORM)
 Flask-Migrate is used for database migrations
