@@ -1,4 +1,5 @@
-import(useSatte) from "react";
+// react hook for managing form state
+import { useState } from "react";
 
 function Register() {
 
