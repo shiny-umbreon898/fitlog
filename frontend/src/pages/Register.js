@@ -47,6 +47,7 @@ function Register() {
                     placeholder="Username"
                     value={form.username}
                     onChange={handleChange}
+                    required
                 />
                 <input
                     type="email"
@@ -54,6 +55,7 @@ function Register() {
                     placeholder="Email"
                     value={form.email}
                     onChange={handleChange}
+                    required
                 />
                 <input
                     type="password"
@@ -61,6 +63,12 @@ function Register() {
                     placeholder="Password"
                     value={form.password}
                     onChange={handleChange}
+
+                    pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+                    title="Must be 8 or more characters long and contain at least one uppercase and lowercase letter and a number"
+                    required
+
+
                 />
 
                 // TODO: add confirm password field and validation

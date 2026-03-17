@@ -1,4 +1,5 @@
 // react hook for managing form state
+import { useState } from "react";
 
 function Login() {
 
@@ -44,6 +45,7 @@ function Login() {
                     placeholder="Email"
                     value={form.email}
                     onChange={handleChange}
+                    required
                 />
                 <input
                     type="password"
@@ -51,6 +53,7 @@ function Login() {
                     placeholder="Password"
                     value={form.password}
                     onChange={handleChange}
+                    required
                 />
                 <button type="submit">Login</button>
             </form>
