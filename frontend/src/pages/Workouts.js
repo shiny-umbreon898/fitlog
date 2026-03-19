@@ -10,7 +10,7 @@ function Workouts() {
         name: "",
         duration: "",
         calories: "",
-        user_id: 1 // TODO replace with logged in user's id
+        user_id: localStorage.getItem("user_id") // use logged in user's id
 
     });
 
