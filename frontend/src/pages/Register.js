@@ -71,8 +71,6 @@ function Register() {
 
                 />
 
-                // TODO: add confirm password field and validation
-
                 <button type="submit">Register</button>
             </form>
         </div>
