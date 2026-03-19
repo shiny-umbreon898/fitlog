@@ -17,12 +17,12 @@ function Login() {
     };
 
     // runs when user submits form and sends a POST request to flask backend
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
 
         e.preventDefault();  // prevent page refresh
 
         // send login request to flask backend
-        const response = fetch("/api/login", {
+        const response = await fetch("/api/login", {
 
             method: "POST",
 
@@ -31,8 +31,29 @@ function Login() {
             body: JSON.stringify(form),
         });
 
-        const data = response.json();
+        const data = await response.json();
         console.log(data);
+
+        // store token in localStorage for authenticated requests
+        if (response.ok) {
+            localStorage.setItem("user_id", data.user_id);
+            alert("Login successful!");
+
+            // redirect to dashboard
+
+            // TODO comment out when dashboard is implemented
+
+            // window.location.href = "/dashboard"; 
+
+
+        } else {
+            alert("Login failed: " + data.message);
+        }
+
+
+
+
+
     };
 
     return (
