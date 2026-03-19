@@ -10,12 +10,27 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Workouts from "./pages/Workouts";
 
-// import Dashboard from "./pages/Dashboard";
-// import Profile from "./pages/Profile";
+import Dashboard from "./pages/Dashboard";
+import Calendar from "./pages/Calendar";
+import Profile from "./pages/Profile";
 
 
 
 function App() {
+
+
+    // detect if user is looged in
+    const userId = localStorage.getItem("user_id");
+
+    // to log user out
+    const handleLogout = () => {
+        localStorage.removeItem("user_id");
+        alert("Logged out successfully");
+        window.location.href = "/login"; // redirect to login page
+    }
+
+
+
     return (
 
         <Router /* enable nav without page refresh */ >
@@ -25,15 +40,32 @@ function App() {
                 <h1>Fitlog</h1>
 
                 <nav>
-                    <Link to="/register">Register</Link>
-                    <Link to="/login">Login</Link>
-                    <Link to="/workouts">Workouts</Link>
+                    {userId ? ( // if user is logged in, show workouts and logout links
+                        <>
+                            <Link to="/">Dashboard</Link>
+                            <Link to="/calendar">Calendar</Link>
+                            <Link to="/workouts">Workouts</Link>
+                            <Link to="/profile">Profile</Link>
+                            <button onClick={handleLogout}>Logout</button>
+                        </>
+                    ) : (   //  default links for non-logged in users
+                        <>
+                            <Link to="/login">Login</Link>
+                            <Link to="/register">Register</Link>
+                        </>
+                    )}
                 </nav>
+
 
                 <Routes>
                     <Route path="/register" element={<Register />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/workouts" element={<Workouts />} />
+
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/profile" element={<Calendar />} />
+
                 </Routes>
 
             </div>

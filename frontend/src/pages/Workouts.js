@@ -16,7 +16,15 @@ function Workouts() {
 
     // fetch workouts on page load
     useEffect(() => { 
-        fetchWorkouts();
+
+        // user login validation
+        const userID = localStorage.getItem("user_id");
+
+        if (!userID) {
+            window.location.href = "/login"; // redirect to login if not logged in
+        } else {
+            fetchWorkouts();
+        }
     }, []);
 
 
