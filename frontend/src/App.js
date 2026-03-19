@@ -8,6 +8,7 @@ import { BrowserRouter as Router, Routes, Route, Link, Switch } from "react-rout
 // Page Components
 import Register from "./pages/Register";
 import Login from "./pages/Login";
+import Workouts from "./pages/Workouts";
 
 // import Dashboard from "./pages/Dashboard";
 // import Profile from "./pages/Profile";
@@ -17,7 +18,7 @@ import Login from "./pages/Login";
 function App() {
     return (
 
-        <Router> // enable nav without page refresh
+        <Router /* enable nav without page refresh */ >
 
             <div className="App">
 
@@ -26,6 +27,7 @@ function App() {
                 <nav>
                     <Link to="/register">Register</Link>
                     <Link to="/login">Login</Link>
+                    <Link to="/workouts">Workouts</Link>
                 </nav>
 
                 <Routes>
