@@ -1,6 +1,6 @@
 # This file defines the API routes for the application, including endpoints for creating, retrieving, updating, and deleting items.
 from flask import Blueprint, jsonify, request
-from . import db
+from .__init__ import db
 from .models import User, Workout, Meal
 
 import bcrypt # For password hashing
@@ -29,7 +29,7 @@ def hello():
 def create_user():
 
     # Create a new user with the provided username, email and password. The password should be hashed before storing in the database.
-    # Expected JSON body: {"username": "aaron", "email": "aaron@email.com", password": "password123"}
+    # Expected JSON body: {"username": "aaron", "email": "aaron@email.com", password": "Password123"}
 
     data = request.get_json()
 

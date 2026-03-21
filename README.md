@@ -56,6 +56,14 @@ http://127.0.0.1:5000/api/ test endpoint to verify backend is running
 
 npm run build to create a production build of the React app 
 
+
+
+## Testing
+
+use .env files in each directory (frontend and backend) for local dev api url
+pip install python-dotenv to load environment variables from .env files in the backend
+
+
 # Notes
 Flask-SQLAlchemy is used for database management (ORM)
 Flask-Migrate is used for database migrations
