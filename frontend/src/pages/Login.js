@@ -1,12 +1,20 @@
 // react hook for managing form state
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
+
+    const navigate = useNavigate();
+
 
     const [form, setForm] = useState({
         email: "",
         password: "",
     });
+
+
+    const [showPassword, setShowPassword] = useState(false);
+    const [error, setError] = useState("");
 
     // runs when user types in form fields and updates form state
     const handleChange = (e) => {
@@ -21,38 +29,34 @@ function Login() {
 
         e.preventDefault();  // prevent page refresh
 
-        // send login request to flask backend
-        const response = await fetch("/api/login", {
+        try {
+            // send login request to flask backend
+            const response = await fetch("/api/login", {
 
-            method: "POST",
+                method: "POST",
 
-            headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json" },
 
-            body: JSON.stringify(form),
-        });
+                body: JSON.stringify(form),
+            });
 
-        const data = await response.json();
-        console.log(data);
+            const data = await response.json();
+            console.log(data);
 
-        // store token in localStorage for authenticated requests
-        if (response.ok) {
-            localStorage.setItem("user_id", data.user_id);
-            alert("Login successful!");
+            // store token in localStorage for authenticated requests
+            if (response.ok) {
+                localStorage.setItem("user_id", data.user_id);
+                alert("Login successful!");
 
-            // redirect to dashboard
+                //window.location.href = "/dashboard"; // redirect to dashboard
+                navigate("/workouts");
 
-            // TODO comment out when dashboard is implemented
-
-            // window.location.href = "/dashboard"; 
-
-
-        } else {
-            alert("Login failed: " + data.message);
+            } else {
+                alert("Login failed: " + data.message);
+            }
+        } catch (error) {
+            setError("An error occurred. Please try again.");
         }
-
-
-
-
 
     };
 
@@ -69,13 +73,24 @@ function Login() {
                     required
                 />
                 <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     name="password"
                     placeholder="Password"
                     value={form.password}
                     onChange={handleChange}
                     required
                 />
+
+                {/*toggle password visibility*/}
+                <div>
+                    <label>
+                        <input
+                            type="checkbox"
+                            onChange={() => setShowPassword(!showPassword)}
+                        />
+                    </label>
+                </div>
+
                 <button type="submit">Login</button>
             </form>
         </div>
