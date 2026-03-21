@@ -4,6 +4,12 @@ import { useNavigate } from "react-router-dom";
 
 function Login() {
 
+    // local development and production
+    const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
+    // use ` backtick for var
+
+
     const navigate = useNavigate();
 
 
@@ -31,7 +37,7 @@ function Login() {
 
         try {
             // send login request to flask backend
-            const response = await fetch("/api/login", {
+            const response = await fetch(`${API_URL}/api/users`, {
 
                 method: "POST",
 

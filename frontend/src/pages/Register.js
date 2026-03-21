@@ -4,6 +4,9 @@ import { useNavigate } from "react-router-dom";
 
 function Register() {
 
+    // local development and production
+    const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
     const navigate = useNavigate();
 
     const [form, setForm] = useState({
@@ -45,9 +48,10 @@ function Register() {
 
         try {
             console.log("Sending:", form);
+            console.log("URL:", `${API_URL}/api/users`);
 
             // send POST request to flask backend
-            const response = await fetch("/api/users", {
+            const response = await fetch(`${API_URL}/api/users`, {
                 method: "POST",
 
                 headers: { "Content-Type": "application/json" },
