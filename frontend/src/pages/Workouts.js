@@ -82,12 +82,20 @@ function Workouts() {
             <form onSubmit={handleSubmit}>
                 <input
                     type="text"
-                    name="name"
-                    placeholder="Workout Name"
-                    value={form.name}
+                    name="workout_type"
+                    list="workout-types"
+                    placeholder="Workout Type"
+                    //value={form.name}
                     onChange={handleChange}
                     required
                 />
+                <datalist id="workout-types">
+                    <option value="Running">Running</option>
+                    <option value="Cycling">Cycling</option>
+                    <option value="Swimming">Swimming</option>
+                </datalist>
+
+
                 <input
                     type="number"
                     name="duration"

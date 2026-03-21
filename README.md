@@ -19,15 +19,19 @@ Architecture: App Factory pattern and Blueprints for routing
 
 
 ## Setup
-1. Initialize the database - run the following commands in the terminal
+
+
+set FLASK_RUN-run.py
+
+Initialize the database - run the following commands in the terminal
 	flask db init
 	flask db migrate -m "Initial migration"
 	flask db upgrade
 
 
-2. Run the app - run the following commands in the terminal
-	cd backend/app
-	python app.py
+Run the app - run the following commands in the terminal
+	cd backend
+	flask run (if not set FLASK_RUN-run.py, use python run.py instead))
 
 http://127.0.0.1:5000/ local development server (default Flask port)
 
@@ -50,7 +54,7 @@ http://127.0.0.1:5000/api/ test endpoint to verify backend is running
 3. npm start to start the React development server
 
 
-
+npm run build to create a production build of the React app 
 
 # Notes
 Flask-SQLAlchemy is used for database management (ORM)
