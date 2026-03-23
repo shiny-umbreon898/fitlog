@@ -1,5 +1,4 @@
-from datetime import datetime
-from .__init__ import db                  
+from .extensions import db
 
 # USER
 class User(db.Model):
@@ -14,7 +13,7 @@ class User(db.Model):
     age = db.Column(db.Integer, nullable=True)
     weight = db.Column(db.Float, nullable=True)  # Weight in kg
     height = db.Column(db.Float, nullable=True)  # Height in cm
-
+        
     def __repr__(self):
         return f"<User {self.username}>"
 
