@@ -11,6 +11,7 @@ class User(db.Model):
     
     # Personal info
     age = db.Column(db.Integer, nullable=True)
+    sex = db.Column(db.String(10), nullable=True) # M/F
     weight = db.Column(db.Float, nullable=True)  # Weight in kg
     height = db.Column(db.Float, nullable=True)  # Height in cm
         

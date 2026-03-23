@@ -60,6 +60,24 @@ def login():
 
     return jsonify({"message": "login successful", "user_id": user.id}), 200
 
+# Update user info by ID - update to add age, gender, height, weight fields
+@api_bp.route("/users", methods=["PUT"])
+def update_user():
+
+    data = request.get_json()
+    if not data or "id" not in data:
+        return jsonify({"error": "user id required"}), 400
+    user = User.query.get(data["id"])
+    if not user: return jsonify({"error": "user not found"}), 404
+    if "age" in data: user.age = data["age"]
+    if "sex" in data: user.gender = data["sex"]
+    if "weight" in data: user.weight = data["weight"]
+    if "height" in data: user.height = data["height"]
+
+    db.session.commit()
+
+
+
 
 # Retrieve single user by ID for profile viewing
 @api_bp.route("/users/<int:user_id>", methods=["GET"])
@@ -68,8 +86,9 @@ def get_user(user_id):
     ## TODO: add authentication to ensure only the user themselves or an admin can view the user profile
 
     user = User.query.get(user_id)
-    if not user:  return jsonify({"error": "User not found"}), 404
-
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
     return jsonify({"id": user.id, 
                     "username": user.username,
                     "email" : user.email}), 200
