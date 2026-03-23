@@ -7,17 +7,12 @@ function Login() {
     // local development and production
     const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
-    // use ` backtick for var
-
-
     const navigate = useNavigate();
-
 
     const [form, setForm] = useState({
         email: "",
         password: "",
     });
-
 
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
@@ -32,38 +27,28 @@ function Login() {
 
     // runs when user submits form and sends a POST request to flask backend
     const handleSubmit = async (e) => {
-
         e.preventDefault();  // prevent page refresh
 
         try {
-            // send login request to flask backend
-            const response = await fetch(`${API_URL}/api/users`, {
-
+            // send login request to the correct backend endpoint
+            const response = await fetch(`${API_URL}/api/users/login`, {
                 method: "POST",
-
                 headers: { "Content-Type": "application/json" },
-
                 body: JSON.stringify(form),
             });
 
             const data = await response.json();
-            console.log(data);
+            console.log("login response:", data);
 
-            // store token in localStorage for authenticated requests
             if (response.ok) {
                 localStorage.setItem("user_id", data.user_id);
-                alert("Login successful!");
-
-                //window.location.href = "/dashboard"; // redirect to dashboard
                 navigate("/workouts");
-
             } else {
-                alert("Login failed: " + data.message);
+                setError(data.error || data.message || "Login failed");
             }
-        } catch (error) {
-            setError("An error occurred. Please try again.");
+        } catch (err) {
+            setError("Network error — please try again.");
         }
-
     };
 
     return (
@@ -94,14 +79,15 @@ function Login() {
                             type="checkbox"
                             onChange={() => setShowPassword(!showPassword)}
                         />
+                        Show password
                     </label>
                 </div>
 
                 <button type="submit">Login</button>
             </form>
+            {error && <p style={{ color: "red" }}>{error}</p>}
         </div>
     );
-
 }
 
 export default Login;
