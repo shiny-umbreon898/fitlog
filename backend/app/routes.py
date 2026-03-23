@@ -1,70 +1,61 @@
 # This file defines the API routes for the application, including endpoints for creating, retrieving, updating, and deleting items.
 from flask import Blueprint, jsonify, request
-from .__init__ import db
+from .extensions import db
 from .models import User, Workout, Meal
 
-import bcrypt # For password hashing
+import bcrypt
+import traceback
+from sqlalchemy.exc import IntegrityError
 
 api_bp = Blueprint("api", __name__)
 
-## TODO: Add authentication routes (register, login, logout) and CRUD routes for workouts and meals.
-## TODO: Add JWT authentication for protected routes and user sessions
-
-## Base route
 @api_bp.route("/", methods=["GET"])
 def index():
     return jsonify({"message": "Welcome to FITLOG API"})
 
-
-## Example route to test API is working
 @api_bp.route("/hello", methods=["GET"])
 def hello():
     return jsonify({"message": "Hello, World"})
 
-
-## Routes for User Authentication (Register, Login, Logout)
-
-## Register a new user
 @api_bp.route("/users", methods=["POST"])
 def create_user():
-
-    # Create a new user with the provided username, email and password. The password should be hashed before storing in the database.
-    # Expected JSON body: {"username": "aaron", "email": "aaron@email.com", password": "Password123"}
-
     data = request.get_json()
-
-    # Validate input
-    if not data or not all(i in data for i in("username", "email", "password")):
+    if not data or not all(k in data for k in ("username", "email", "password")):
         return jsonify({"error": "username, email and password required"}), 400
 
-    # TODO: add additional validation for email format, password strength, and check for existing username/email in the database before creating a new user
+    # check uniqueness before commit
+    if User.query.filter_by(username=data["username"]).first():
+        return jsonify({"error": "username already exists"}), 409
+    if User.query.filter_by(email=data["email"]).first():
+        return jsonify({"error": "email already exists"}), 409
 
-    # Password hashing using bcrypt before storing in the database
-    hashed_password = bcrypt.hashpw(data["password"].encode('utf-8'), bcrypt.gensalt()).decode("utf-8") # decode before storing since bcrypt returns bytes
-
-    user = User(username=data["username"],
-                email=data["email"],
-                password=hashed_password)
+    hashed_password = bcrypt.hashpw(data["password"].encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    user = User(username=data["username"], email=data["email"], password=hashed_password)
 
     db.session.add(user)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError as ie:
+        db.session.rollback()
+        print("IntegrityError during commit:", ie)
+        traceback.print_exc()
+        return jsonify({"error": "integrity_error", "detail": str(ie)}), 409
+    except Exception as ex:
+        db.session.rollback()
+        print("Exception during db.session.commit():", ex)
+        traceback.print_exc()
+        return jsonify({"error": "internal_server_error", "detail": str(ex)}), 500
 
-    return jsonify({"id": user.id, 
-                    "username": user.username,
-                    "email" : user.email}), 201
+    return jsonify({"id": user.id, "username": user.username, "email": user.email}), 201
 
-## Retrieve single user by email for login
 @api_bp.route("/users/login", methods=["POST"])
 def login():
-
     data = request.get_json()
-
-    if not data or not all(i in data for i in("email", "password")):
+    if not data or not all(k in data for k in ("email", "password")):
         return jsonify({"error": "email and password required"}), 400
 
     user = User.query.filter_by(email=data["email"]).first()
-
-    if not user or not bcrypt.checkpw(data["password"].encode('utf-8'), user.password.encode('utf-8')):
+    if not user or not bcrypt.checkpw(data["password"].encode("utf-8"), user.password.encode("utf-8")):
         return jsonify({"error": "invalid email or password"}), 401
 
     return jsonify({"message": "login successful", "user_id": user.id}), 200
