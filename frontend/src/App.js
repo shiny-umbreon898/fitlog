@@ -3,7 +3,7 @@ import logo from './logo.svg';
 import './App.css';
 
 // React Router component for handling navigation
-import { BrowserRouter as Router, Routes, Route, Link, Switch } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 
 // Page Components
 import Register from "./pages/Register";
@@ -14,10 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import Profile from "./pages/Profile";
 
-
-
 function App() {
-
 
     // detect if user is looged in
     const userId = localStorage.getItem("user_id");
@@ -28,8 +25,6 @@ function App() {
         alert("Logged out successfully");
         window.location.href = "/login"; // redirect to login page
     }
-
-
 
     return (
 
@@ -56,7 +51,6 @@ function App() {
                     )}
                 </nav>
 
-
                 <Routes>
                     <Route path="/register" element={<Register />} />
                     <Route path="/login" element={<Login />} />
@@ -64,7 +58,7 @@ function App() {
 
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/profile" element={<Profile />} />
-                    <Route path="/profile" element={<Calendar />} />
+                    <Route path="/calendar" element={<Calendar />} />
 
                 </Routes>
 
