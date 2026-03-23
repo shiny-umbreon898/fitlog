@@ -42,7 +42,10 @@ function Login() {
 
             if (response.ok) {
                 localStorage.setItem("user_id", data.user_id);
-                navigate("/workouts");
+                //navigate("/dashboard");
+                // go to dashboard after successful login
+                window.location.href = '/dashboard'; // reloads page and ensures all user-specific data is fetched fresh
+
             } else {
                 setError(data.error || data.message || "Login failed");
             }

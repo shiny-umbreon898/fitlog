@@ -60,47 +60,76 @@ def login():
 
     return jsonify({"message": "login successful", "user_id": user.id}), 200
 
-# Update user info by ID - update to add age, gender, height, weight fields
-@api_bp.route("/users", methods=["PUT"])
-def update_user():
-
+# Update user info by ID - update to add age, sex, height, weight fields
+@api_bp.route("/users/<int:user_id>", methods=["PUT"])
+def update_user(user_id):
     data = request.get_json()
-    if not data or "id" not in data:
-        return jsonify({"error": "user id required"}), 400
-    user = User.query.get(data["id"])
-    if not user: return jsonify({"error": "user not found"}), 404
-    if "age" in data: user.age = data["age"]
-    if "sex" in data: user.gender = data["sex"]
-    if "weight" in data: user.weight = data["weight"]
-    if "height" in data: user.height = data["height"]
+    if not data:
+        return jsonify({"error": "no data provided"}), 400
 
-    db.session.commit()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "user not found"}), 404
 
+    # Accept and coerce these fields
+    if "age" in data:
+        try:
+            user.age = None if data["age"] in (None, "") else int(data["age"])
+        except (ValueError, TypeError):
+            return jsonify({"error": "invalid value for age"}), 400
 
+    if "sex" in data:
+        # store as-is; consider normalizing to 'Male'/'Female' or 'M'/'F' if needed
+        user.sex = data["sex"]
 
+    if "weight" in data:
+        try:
+            user.weight = None if data["weight"] in (None, "") else float(data["weight"])
+        except (ValueError, TypeError):
+            return jsonify({"error": "invalid value for weight"}), 400
+
+    if "height" in data:
+        try:
+            user.height = None if data["height"] in (None, "") else float(data["height"])
+        except (ValueError, TypeError):
+            return jsonify({"error": "invalid value for height"}), 400
+
+    try:
+        db.session.commit()
+    except Exception as ex:
+        db.session.rollback()
+        print("Exception during user update commit:", ex)
+        traceback.print_exc()
+        return jsonify({"error": "internal_server_error", "detail": str(ex)}), 500
+
+    return jsonify({
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "age": user.age,
+        "sex": user.sex,
+        "weight": user.weight,
+        "height": user.height
+    }), 200
 
 # Retrieve single user by ID for profile viewing
 @api_bp.route("/users/<int:user_id>", methods=["GET"])
 def get_user(user_id):
-
-    ## TODO: add authentication to ensure only the user themselves or an admin can view the user profile
-
     user = User.query.get(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
-    
+
     return jsonify({"id": user.id, 
                     "username": user.username,
-                    "email" : user.email}), 200
+                    "email" : user.email,
+                    "age": user.age,
+                    "sex": user.sex,
+                    "weight": user.weight,
+                    "height": user.height}), 200
 
 ## Delete user by ID
 @api_bp.route("/users/<int:user_id>", methods=["DELETE"])
 def delete_user(user_id):
-
-    ## TODO: add authentication to ensure only the user themselves or an admin can delete the user account
-    ## TODO: add cascading delete to remove all associated workouts and meals when a user is deleted
-    ## TODO: add password verification before allowing deletion of user account if user is deleting their own account
-    
     user = User.query.get(user_id)
     if not user: return jsonify({"error": "user not found"}), 404
 
@@ -109,22 +138,27 @@ def delete_user(user_id):
 
     return jsonify({"message": "user deleted"}), 200
 
-
 ## Workout Routes
 
 ## Create a new workout
 @api_bp.route("/workouts", methods=["POST"])
 def create_workout():
-
     data = request.get_json()
 
     # Check user exists before creating workout
+    if not data or "user_id" not in data:
+        return jsonify({"error": "user_id required"}), 400
+
     user = User.query.get(data["user_id"])
     if not user: return jsonify({"error": "user not found"}), 404
 
     # Validate input
-    if not data or not all(i in data for i in("name", "duration")):
+    if not all(i in data for i in("name", "duration")):
         return jsonify({"error": "name and duration required"}), 400
+
+    # Optional server-side check for profile completeness
+    if user.age is None or user.weight is None or user.height is None:
+        return jsonify({"error": "user profile incomplete - age, weight and height required"}), 400
 
     workout = Workout(name=data["name"],
                       duration=data["duration"],
@@ -140,16 +174,12 @@ def create_workout():
 ## Retrieve all workouts for a user
 @api_bp.route("/users/<int:user_id>/workouts", methods=["GET"])
 def get_workouts(user_id):
-
     workouts = Workout.query.filter_by(user_id=user_id).all()
-
     return jsonify([{"id": w.id, "name": w.name, "duration": w.duration} for w in workouts]), 200
-
 
 ## Update a workout by ID
 @api_bp.route("/workouts/<int:workout_id>", methods=["PUT"])
 def update_workout(workout_id):
-
     data = request.get_json()
     workout = Workout.query.get(workout_id)
     if not workout: return jsonify({"error": "workout not found"}), 404
@@ -166,7 +196,6 @@ def update_workout(workout_id):
 ## Delete a workout by ID
 @api_bp.route("/workouts/<int:workout_id>", methods=["DELETE"])
 def delete_workout(workout_id):
-
     workout = Workout.query.get(workout_id)
     if not workout: return jsonify({"error": "workout not found"}), 404
 
