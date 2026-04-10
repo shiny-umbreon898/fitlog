@@ -182,6 +182,15 @@ function Workouts() {
         return ICONS.default;
     };
 
+    const fmt = (iso) => {
+        try {
+            const d = new Date(iso);
+            return d.toLocaleString();
+        } catch (e) {
+            return iso;
+        }
+    }
+
     return (
         <div>
             <h1>Workouts</h1>
@@ -256,7 +265,7 @@ function Workouts() {
                         <span style={{ fontSize: 24 }}>{iconFor(workout.name)}</span>
                         <div>
                             <div><strong>{workout.name}</strong> - {workout.duration} mins</div>
-                            <div style={{ fontSize: 12, color: '#666' }}>{workout.calories ? `${workout.calories} kcal` : ''}</div>
+                            <div style={{ fontSize: 12, color: '#666' }}>{workout.calories ? `${workout.calories} kcal` : ''} {workout.timestamp ? `· ${fmt(workout.timestamp)}` : ''}</div>
                         </div>
                         <button style={{ marginLeft: 'auto' }} onClick={() => handleDelete(workout.id)}>Delete</button>
                     </li>

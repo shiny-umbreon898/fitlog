@@ -6,6 +6,7 @@ from .models import User, Workout, Meal
 import bcrypt
 import traceback
 from sqlalchemy.exc import IntegrityError
+from datetime import datetime
 
 api_bp = Blueprint("api", __name__)
 
@@ -137,7 +138,7 @@ def get_user(user_id):
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    return jsonify({"id": user.id, 
+    return jsonify({"id": user.id,
                     "username": user.username,
                     "email" : user.email,
                     "age": user.age,
@@ -196,24 +197,34 @@ def create_workout():
 
     calories = estimate_calories(met, user.weight, data["duration"])
 
+    # optional timestamp provided by client, otherwise use server time
+    ts = None
+    if "timestamp" in data:
+        try:
+            ts = datetime.fromisoformat(data["timestamp"])
+        except Exception:
+            ts = None
+
     workout = Workout(name=data["name"],
                       duration=data["duration"],
                       user_id=data["user_id"],
-                      calories=round(calories, 1))
+                      calories=round(calories, 1),
+                      timestamp=ts or datetime.utcnow())
 
     db.session.add(workout)
     db.session.commit()
 
-    return jsonify({"id": workout.id, 
+    return jsonify({"id": workout.id,
                     "name": workout.name,
-                    "duration" : workout.duration,
-                    "calories": workout.calories}), 201
+                    "duration": workout.duration,
+                    "calories": workout.calories,
+                    "timestamp": workout.timestamp.isoformat()}), 201
 
 ## Retrieve all workouts for a user
 @api_bp.route("/users/<int:user_id>/workouts", methods=["GET"])
 def get_workouts(user_id):
-    workouts = Workout.query.filter_by(user_id=user_id).order_by(Workout.id.desc()).limit(20).all()
-    return jsonify([{"id": w.id, "name": w.name, "duration": w.duration, "calories": w.calories} for w in workouts]), 200
+    workouts = Workout.query.filter_by(user_id=user_id).order_by(Workout.timestamp.desc()).limit(50).all()
+    return jsonify([{"id": w.id, "name": w.name, "duration": w.duration, "calories": w.calories, "timestamp": w.timestamp.isoformat()} for w in workouts]), 200
 
 ## Update a workout by ID
 @api_bp.route("/workouts/<int:workout_id>", methods=["PUT"])
@@ -241,3 +252,32 @@ def delete_workout(workout_id):
     db.session.commit()
 
     return jsonify({"message": "workout deleted"}), 200
+
+
+# Simple meal creation to support calendar entries
+@api_bp.route("/meals", methods=["POST"])
+def create_meal():
+    data = request.get_json()
+    if not data or not all(k in data for k in ("name", "calories", "user_id")):
+        return jsonify({"error": "name, calories and user_id required"}), 400
+
+    user = User.query.get(data["user_id"])
+    if not user: return jsonify({"error": "user not found"}), 404
+
+    ts = None
+    if "timestamp" in data:
+        try:
+            ts = datetime.fromisoformat(data["timestamp"])
+        except Exception:
+            ts = None
+
+    meal = Meal(name=data["name"], calories=int(data["calories"]), user_id=data["user_id"], timestamp=ts or datetime.utcnow())
+    db.session.add(meal)
+    db.session.commit()
+    return jsonify({"id": meal.id, "name": meal.name, "calories": meal.calories, "timestamp": meal.timestamp.isoformat()}), 201
+
+
+@api_bp.route("/users/<int:user_id>/meals", methods=["GET"])
+def get_meals(user_id):
+    meals = Meal.query.filter_by(user_id=user_id).order_by(Meal.timestamp.desc()).limit(50).all()
+    return jsonify([{"id": m.id, "name": m.name, "calories": m.calories, "timestamp": m.timestamp.isoformat()} for m in meals]), 200

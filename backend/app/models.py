@@ -1,4 +1,5 @@
 from .extensions import db
+from datetime import datetime
 
 # USER
 class User(db.Model):
@@ -27,6 +28,8 @@ class Workout(db.Model):
     duration = db.Column(db.Integer, nullable=False)  # Duration in minutes
     calories = db.Column(db.Float, nullable=True)     # Calculated calories burned
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)  # Foreign key to user
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
     def __repr__(self):
         return f"<Workout {self.name}>"
 
@@ -38,6 +41,8 @@ class Meal(db.Model):
     description = db.Column(db.String(255), nullable=True)
     calories = db.Column(db.Integer, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)  # Foreign key to user
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
     def __repr__(self):
         return f"<Meal {self.name}>"
 
