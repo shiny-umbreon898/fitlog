@@ -11,13 +11,24 @@ function Workouts() {
     const [form, setForm] = useState({
         name: "",
         duration: "",
-        calories: "",
         user_id: userId
     });
 
     const [profile, setProfile] = useState(null);
     const [showProfileModal, setShowProfileModal] = useState(false);
-    const [profileForm, setProfileForm] = useState({ age: "", weight: "", height: "" });
+    const [profileForm, setProfileForm] = useState({ age: "", sex: "", weight: "", height: "" });
+
+    // activity icons map
+    const ICONS = {
+        running: "??",
+        cycling: "??",
+        swimming: "??",
+        walking: "??",
+        hiking: "??",
+        yoga: "??",
+        strength: "???",
+        default: "??"
+    };
 
     // fetch workouts on page load
     useEffect(() => {
@@ -37,12 +48,13 @@ function Workouts() {
                 setProfile(pData);
                 setProfileForm({
                     age: pData.age ?? "",
+                    sex: pData.sex ?? "",
                     weight: pData.weight ?? "",
                     height: pData.height ?? ""
                 });
 
                 // if profile incomplete, show modal to collect info
-                if (pData.age == null || pData.weight == null || pData.height == null) {
+                if (pData.age == null || pData.weight == null || pData.height == null || !pData.sex) {
                     setShowProfileModal(true);
                 }
             } else {
@@ -85,6 +97,7 @@ function Workouts() {
 
         const payload = {
             age: profileForm.age === "" ? null : Number(profileForm.age),
+            sex: profileForm.sex || null,
             weight: profileForm.weight === "" ? null : Number(profileForm.weight),
             height: profileForm.height === "" ? null : Number(profileForm.height)
         };
@@ -113,7 +126,7 @@ function Workouts() {
         e.preventDefault();
 
         // ensure profile exists and is complete
-        if (!profile || profile.age == null || profile.weight == null || profile.height == null) {
+        if (!profile || profile.age == null || profile.weight == null || profile.height == null || !profile.sex) {
             setShowProfileModal(true);
             return;
         }
@@ -132,13 +145,18 @@ function Workouts() {
         }
 
         try {
-            await fetch(`${API_URL}/api/workouts`, {
+            const res = await fetch(`${API_URL}/api/workouts`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
-            fetchProfileAndWorkouts();
-            setForm({ name: "", duration: "", calories: "", user_id: userId });
+            if (!res.ok) {
+                const err = await res.json();
+                alert(err.error || "Failed to add workout");
+                return;
+            }
+            await fetchProfileAndWorkouts();
+            setForm({ name: "", duration: "", user_id: userId });
         } catch (err) {
             console.error(err);
             alert("Failed to add workout");
@@ -149,6 +167,19 @@ function Workouts() {
     const handleDelete = async (id) => {
         await fetch(`${API_URL}/api/workouts/${id}`, { method: "DELETE" });
         fetchProfileAndWorkouts();
+    };
+
+    const iconFor = (name) => {
+        if (!name) return ICONS.default;
+        const key = name.toLowerCase();
+        if (key.includes('run')) return ICONS.running;
+        if (key.includes('cycle') || key.includes('bike')) return ICONS.cycling;
+        if (key.includes('swim')) return ICONS.swimming;
+        if (key.includes('walk')) return ICONS.walking;
+        if (key.includes('hike')) return ICONS.hiking;
+        if (key.includes('yoga')) return ICONS.yoga;
+        if (key.includes('lift') || key.includes('strength') || key.includes('weight')) return ICONS.strength;
+        return ICONS.default;
     };
 
     return (
@@ -170,7 +201,7 @@ function Workouts() {
                             </div>
                             <div>
                                 <label>Sex</label>
-                                <input name="sex" type="string" list="sex-type" value={profileForm.sex} onChange={handleProfileChange} required />
+                                <input name="sex" type="text" list="sex-type" value={profileForm.sex} onChange={handleProfileChange} required />
                                 <datalist id="sex-type">
                                     <option value="Male">Male</option>
                                     <option value="Female">Female</option>
@@ -215,21 +246,19 @@ function Workouts() {
                     onChange={handleChange}
                     required
                 />
-                <input
-                    type="number"
-                    name="calories"
-                    placeholder="Calories Burned"
-                    value={form.calories}
-                    onChange={handleChange}
-                />
                 <button type="submit">Add Workout</button>
             </form>
 
+            <h2>Recent Workouts</h2>
             <ul>
                 {workouts.map((workout) => (
-                    <li key={workout.id}>
-                        {workout.name} - {workout.duration} mins
-                        <button onClick={() => handleDelete(workout.id)}>Delete</button>
+                    <li key={workout.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 24 }}>{iconFor(workout.name)}</span>
+                        <div>
+                            <div><strong>{workout.name}</strong> - {workout.duration} mins</div>
+                            <div style={{ fontSize: 12, color: '#666' }}>{workout.calories ? `${workout.calories} kcal` : ''}</div>
+                        </div>
+                        <button style={{ marginLeft: 'auto' }} onClick={() => handleDelete(workout.id)}>Delete</button>
                     </li>
                 ))}
             </ul>
