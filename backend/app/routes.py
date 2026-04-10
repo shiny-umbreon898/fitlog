@@ -9,6 +9,24 @@ from sqlalchemy.exc import IntegrityError
 
 api_bp = Blueprint("api", __name__)
 
+# MET values approximate for activities per compendium
+MET_VALUES = {
+    'running': 9.8,
+    'cycling': 7.5,
+    'swimming': 6.0,
+    'walking': 3.5,
+    'hiking': 6.0,
+    'yoga': 3.0,
+    'strength': 6.0,
+    # default
+}
+
+
+def estimate_calories(met, weight_kg, duration_minutes):
+    # calories = MET * weight_kg * duration_hours
+    return met * weight_kg * (duration_minutes / 60.0)
+
+
 @api_bp.route("/", methods=["GET"])
 def index():
     return jsonify({"message": "Welcome to FITLOG API"})
@@ -160,22 +178,42 @@ def create_workout():
     if user.age is None or user.weight is None or user.height is None:
         return jsonify({"error": "user profile incomplete - age, weight and height required"}), 400
 
+    # determine MET from workout name
+    key = data["name"].strip().lower()
+    met = MET_VALUES.get(key, None)
+    if met is None:
+        # try simple mapping
+        if "run" in key:
+            met = MET_VALUES.get("running")
+        elif "cycle" in key or "bike" in key:
+            met = MET_VALUES.get("cycling")
+        elif "swim" in key:
+            met = MET_VALUES.get("swimming")
+        elif "walk" in key:
+            met = MET_VALUES.get("walking")
+        else:
+            met = 6.0
+
+    calories = estimate_calories(met, user.weight, data["duration"])
+
     workout = Workout(name=data["name"],
                       duration=data["duration"],
-                      user_id=data["user_id"])
+                      user_id=data["user_id"],
+                      calories=round(calories, 1))
 
     db.session.add(workout)
     db.session.commit()
 
     return jsonify({"id": workout.id, 
                     "name": workout.name,
-                    "duration" : workout.duration}), 201
+                    "duration" : workout.duration,
+                    "calories": workout.calories}), 201
 
 ## Retrieve all workouts for a user
 @api_bp.route("/users/<int:user_id>/workouts", methods=["GET"])
 def get_workouts(user_id):
-    workouts = Workout.query.filter_by(user_id=user_id).all()
-    return jsonify([{"id": w.id, "name": w.name, "duration": w.duration} for w in workouts]), 200
+    workouts = Workout.query.filter_by(user_id=user_id).order_by(Workout.id.desc()).limit(20).all()
+    return jsonify([{"id": w.id, "name": w.name, "duration": w.duration, "calories": w.calories} for w in workouts]), 200
 
 ## Update a workout by ID
 @api_bp.route("/workouts/<int:workout_id>", methods=["PUT"])
