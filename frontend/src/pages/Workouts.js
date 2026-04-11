@@ -299,7 +299,7 @@ function Workouts() {
                             <span className="workout-icon">{iconFor(workout.name)}</span>
                             <div className="workout-info">
                                 <div className="workout-name">{workout.name} - {workout.duration} mins</div>
-                                <div className="workout-meta">{workout.calories ? `${workout.calories} kcal` : ''} {workout.timestamp ? `· ${fmt(workout.timestamp)}` : ''}</div>
+                                <div className="workout-meta">{workout.calories ? `${workout.calories} kcal,` : ''} {workout.timestamp ? `${fmt(workout.timestamp)}` : ''}</div>
                             </div>
                             <button className="workout-delete-btn" onClick={() => handleDelete(workout.id)}>Delete</button>
                         </li>
