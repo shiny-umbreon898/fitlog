@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import '../App.css'; // Import CSS from parent directory
 
+// icons
+//import { FaRunning, FaBicycle, FaSwimmer, FaWalking, FaHiking, FaDumbbell, FaQuestion } from 'react-icons/fa';
+import { FaPersonRunning, FaBicycle, FaPersonSwimming, FaPersonWalking, FaPersonHiking, FaDumbbell, FaQuestion } from 'react-icons/fa6';
+
+//import { TbBike } from "react-icons/tb";
+import { GiLotus } from 'react-icons/gi';
+
 function Workouts() {
     const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
     const userId = localStorage.getItem("user_id");
@@ -19,16 +26,19 @@ function Workouts() {
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [profileForm, setProfileForm] = useState({ age: "", sex: "", weight: "", height: "" });
 
-    // activity icons map
+    // activity icons map - maps workout types to react icons
+    // Icons are from react-icons/fa6 and react-icons/gi libraries
+    // Each icon represents a different fitness activity
     const ICONS = {
-        running: "",
-        cycling: "",
-        swimming: "",
-        walking: "",
-        hiking: "",
-        yoga: "",
-        strength: "",
-        default: ""
+        running: <FaPersonRunning />,
+        cycling: <FaBicycle />,
+        swimming: <FaPersonSwimming />,
+        walking: <FaPersonWalking />,
+        hiking: <FaPersonHiking />,
+        yoga: <GiLotus />,
+        strength: <FaDumbbell />,
+        default: <FaQuestion />
+
     };
 
     // fetch workouts on page load
@@ -92,9 +102,30 @@ function Workouts() {
         setProfileForm({ ...profileForm, [e.target.name]: e.target.value });
     };
 
+    // client-side validation helpers
+    const validateProfile = (p) => {
+        const age = Number(p.age);
+        const weight = Number(p.weight);
+        const height = Number(p.height);
+        const sex = (p.sex || "").toString().trim();
+
+        if (!sex) return "Sex is required";
+        if (!['male', 'female', 'm', 'f'].includes(sex.toLowerCase())) return "Sex must be Male or Female";
+        if (!Number.isFinite(age) || age < 5 || age > 120) return "Age must be between 5 and 120";
+        if (!Number.isFinite(weight) || weight < 20 || weight > 500) return "Weight must be between 20kg and 500kg";
+        if (!Number.isFinite(height) || height < 50 || height > 300) return "Height must be between 50cm and 300cm";
+        return null;
+    }
+
     // submit profile modal
     const submitProfile = async (e) => {
         e.preventDefault();
+
+        const validationError = validateProfile(profileForm);
+        if (validationError) {
+            alert(validationError);
+            return;
+        }
 
         const payload = {
             age: profileForm.age === "" ? null : Number(profileForm.age),
@@ -132,18 +163,13 @@ function Workouts() {
             return;
         }
 
-        // map form.workout_type -> name if needed
-        const payload = {
-            name: form.name || form.workout_type || "",
-            duration: Number(form.duration),
-            user_id: Number(userId)
-        };
+        // validate workout inputs
+        const name = (form.name || form.workout_type || "").toString().trim();
+        const duration = Number(form.duration);
+        if (!name) { alert('Workout name required'); return; }
+        if (!Number.isFinite(duration) || duration <= 0 || duration > 1440) { alert('Duration must be 1-1440 minutes'); return; }
 
-        // basic client validation
-        if (!payload.name || !payload.duration) {
-            alert("Name and duration required");
-            return;
-        }
+        const payload = { name, duration, user_id: Number(userId) };
 
         try {
             const res = await fetch(`${API_URL}/api/workouts`, {
@@ -170,9 +196,12 @@ function Workouts() {
         fetchProfileAndWorkouts();
     };
 
+    // Maps workout name to appropriate icon
     const iconFor = (name) => {
         if (!name) return ICONS.default;
         const key = name.toLowerCase();
+        
+        // Match specific keywords in workout name and return corresponding icon
         if (key.includes('run')) return ICONS.running;
         if (key.includes('cycle') || key.includes('bike')) return ICONS.cycling;
         if (key.includes('swim')) return ICONS.swimming;
@@ -180,6 +209,8 @@ function Workouts() {
         if (key.includes('hike')) return ICONS.hiking;
         if (key.includes('yoga')) return ICONS.yoga;
         if (key.includes('lift') || key.includes('strength') || key.includes('weight')) return ICONS.strength;
+        
+        // If no match found, return question mark icon
         return ICONS.default;
     };
 
@@ -205,7 +236,7 @@ function Workouts() {
                             <form onSubmit={submitProfile}>
                                 <div>
                                     <label>Age</label>
-                                    <input name="age" type="number" value={profileForm.age} onChange={handleProfileChange} required />
+                                    <input name="age" type="number" value={profileForm.age} onChange={handleProfileChange} required min="5" max="120" />
                                 </div>
                                 <div>
                                     <label>Sex</label>
@@ -217,11 +248,11 @@ function Workouts() {
                                 </div>
                                 <div>
                                     <label>Weight (kg)</label>
-                                    <input name="weight" type="number" step="0.1" value={profileForm.weight} onChange={handleProfileChange} required />
+                                    <input name="weight" type="number" step="0.1" value={profileForm.weight} onChange={handleProfileChange} required min="20" max="500" />
                                 </div>
                                 <div>
                                     <label>Height (cm)</label>
-                                    <input name="height" type="number" step="0.1" value={profileForm.height} onChange={handleProfileChange} required />
+                                    <input name="height" type="number" step="0.1" value={profileForm.height} onChange={handleProfileChange} required min="50" max="300" />
                                 </div>
                                 <button type="submit">Save</button>
                                 <button type="button" onClick={() => setShowProfileModal(false)}>Cancel</button>
@@ -254,6 +285,8 @@ function Workouts() {
                             value={form.duration}
                             onChange={handleChange}
                             required
+                            min="1"
+                            max="1440"
                         />
                         <button type="submit">Add Workout</button>
                     </form>
