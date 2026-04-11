@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import '../App.css'; // Import CSS from parent directory
 
 function Workouts() {
     const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -20,14 +21,14 @@ function Workouts() {
 
     // activity icons map
     const ICONS = {
-        running: "??",
-        cycling: "??",
-        swimming: "??",
-        walking: "??",
-        hiking: "??",
-        yoga: "??",
-        strength: "???",
-        default: "??"
+        running: "",
+        cycling: "",
+        swimming: "",
+        walking: "",
+        hiking: "",
+        yoga: "",
+        strength: "",
+        default: ""
     };
 
     // fetch workouts on page load
@@ -192,85 +193,86 @@ function Workouts() {
     }
 
     return (
-        <div>
-            <h1>Workouts</h1>
+        <div className="workouts-wrapper">
+            <div className="workouts-container">
+                <h1>Workouts</h1>
 
-            {/* Profile modal */}
-            {showProfileModal && (
-                <div style={{
-                    position: "fixed", left: 0, top: 0, right: 0, bottom: 0,
-                    background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center"
-                }}>
-                    <div style={{ background: "#fff", padding: 20, borderRadius: 8, maxWidth: 400, width: "90%" }}>
-                        <h2>Complete Profile</h2>
-                        <form onSubmit={submitProfile}>
-                            <div>
-                                <label>Age</label>
-                                <input name="age" type="number" value={profileForm.age} onChange={handleProfileChange} required />
-                            </div>
-                            <div>
-                                <label>Sex</label>
-                                <input name="sex" type="text" list="sex-type" value={profileForm.sex} onChange={handleProfileChange} required />
-                                <datalist id="sex-type">
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                </datalist>
-                            </div>
-                            <div>
-                                <label>Weight (kg)</label>
-                                <input name="weight" type="number" step="0.1" value={profileForm.weight} onChange={handleProfileChange} required />
-                            </div>
-                            <div>
-                                <label>Height (cm)</label>
-                                <input name="height" type="number" step="0.1" value={profileForm.height} onChange={handleProfileChange} required />
-                            </div>
-                            <button type="submit">Save</button>
-                            <button type="button" onClick={() => setShowProfileModal(false)}>Cancel</button>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    name="name"
-                    list="workout-types"
-                    placeholder="Workout Type"
-                    value={form.name}
-                    onChange={handleChange}
-                    required
-                />
-                <datalist id="workout-types">
-                    <option value="Running">Running</option>
-                    <option value="Cycling">Cycling</option>
-                    <option value="Swimming">Swimming</option>
-                </datalist>
-
-                <input
-                    type="number"
-                    name="duration"
-                    placeholder="Duration (minutes)"
-                    value={form.duration}
-                    onChange={handleChange}
-                    required
-                />
-                <button type="submit">Add Workout</button>
-            </form>
-
-            <h2>Recent Workouts</h2>
-            <ul>
-                {workouts.map((workout) => (
-                    <li key={workout.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 24 }}>{iconFor(workout.name)}</span>
-                        <div>
-                            <div><strong>{workout.name}</strong> - {workout.duration} mins</div>
-                            <div style={{ fontSize: 12, color: '#666' }}>{workout.calories ? `${workout.calories} kcal` : ''} {workout.timestamp ? `· ${fmt(workout.timestamp)}` : ''}</div>
+                {/* Profile modal */}
+                {showProfileModal && (
+                    <div className="modal-overlay">
+                        <div className="modal-content">
+                            <h2>Complete Profile</h2>
+                            <form onSubmit={submitProfile}>
+                                <div>
+                                    <label>Age</label>
+                                    <input name="age" type="number" value={profileForm.age} onChange={handleProfileChange} required />
+                                </div>
+                                <div>
+                                    <label>Sex</label>
+                                    <input name="sex" type="text" list="sex-type" value={profileForm.sex} onChange={handleProfileChange} required />
+                                    <datalist id="sex-type">
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                    </datalist>
+                                </div>
+                                <div>
+                                    <label>Weight (kg)</label>
+                                    <input name="weight" type="number" step="0.1" value={profileForm.weight} onChange={handleProfileChange} required />
+                                </div>
+                                <div>
+                                    <label>Height (cm)</label>
+                                    <input name="height" type="number" step="0.1" value={profileForm.height} onChange={handleProfileChange} required />
+                                </div>
+                                <button type="submit">Save</button>
+                                <button type="button" onClick={() => setShowProfileModal(false)}>Cancel</button>
+                            </form>
                         </div>
-                        <button style={{ marginLeft: 'auto' }} onClick={() => handleDelete(workout.id)}>Delete</button>
-                    </li>
-                ))}
-            </ul>
+                    </div>
+                )}
+
+                <div className="workout-form">
+                    <form onSubmit={handleSubmit}>
+                        <input
+                            type="text"
+                            name="name"
+                            list="workout-types"
+                            placeholder="Workout Type"
+                            value={form.name}
+                            onChange={handleChange}
+                            required
+                        />
+                        <datalist id="workout-types">
+                            <option value="Running">Running</option>
+                            <option value="Cycling">Cycling</option>
+                            <option value="Swimming">Swimming</option>
+                        </datalist>
+
+                        <input
+                            type="number"
+                            name="duration"
+                            placeholder="Duration (minutes)"
+                            value={form.duration}
+                            onChange={handleChange}
+                            required
+                        />
+                        <button type="submit">Add Workout</button>
+                    </form>
+                </div>
+
+                <h2>Recent Workouts</h2>
+                <ul className="workout-list">
+                    {workouts.map((workout) => (
+                        <li key={workout.id} className="workout-item">
+                            <span className="workout-icon">{iconFor(workout.name)}</span>
+                            <div className="workout-info">
+                                <div className="workout-name">{workout.name} - {workout.duration} mins</div>
+                                <div className="workout-meta">{workout.calories ? `${workout.calories} kcal` : ''} {workout.timestamp ? `· ${fmt(workout.timestamp)}` : ''}</div>
+                            </div>
+                            <button className="workout-delete-btn" onClick={() => handleDelete(workout.id)}>Delete</button>
+                        </li>
+                    ))}
+                </ul>
+            </div>
         </div>
     );
 }

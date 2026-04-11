@@ -6,7 +6,7 @@ from .models import User, Workout, Meal
 import bcrypt
 import traceback
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime
+from datetime import datetime, timedelta
 
 api_bp = Blueprint("api", __name__)
 
@@ -281,3 +281,80 @@ def create_meal():
 def get_meals(user_id):
     meals = Meal.query.filter_by(user_id=user_id).order_by(Meal.timestamp.desc()).limit(50).all()
     return jsonify([{"id": m.id, "name": m.name, "calories": m.calories, "timestamp": m.timestamp.isoformat()} for m in meals]), 200
+
+# Summary endpoint
+@api_bp.route('/users/<int:user_id>/summary', methods=['GET'])
+def user_summary(user_id):
+    """Return daily or weekly summary for given user.
+    Query param: period=daily|weekly (default=daily)
+    For daily: returns totals for today and breakdown by hour optional.
+    For weekly: returns totals for last 7 days and per-day breakdown.
+    """
+    period = request.args.get('period', 'daily')
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'user not found'}), 404
+
+    now = datetime.utcnow()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    if period == 'weekly':
+        # last 7 days including today
+        start = today_start - timedelta(days=6)
+        # aggregate per day
+        day_totals = []
+        total_workout_cal = 0.0
+        total_meal_cal = 0
+        for i in range(7):
+            day = start + timedelta(days=i)
+            next_day = day + timedelta(days=1)
+            workouts = Workout.query.filter(Workout.user_id == user_id, Workout.timestamp >= day, Workout.timestamp < next_day).all()
+            meals = Meal.query.filter(Meal.user_id == user_id, Meal.timestamp >= day, Meal.timestamp < next_day).all()
+            w_cal = sum((w.calories or 0) for w in workouts)
+            m_cal = sum((m.calories or 0) for m in meals)
+            total_workout_cal += w_cal
+            total_meal_cal += m_cal
+            day_totals.append({
+                'date': day.date().isoformat(),
+                'workout_calories': round(w_cal,1),
+                'meal_calories': int(m_cal),
+                'workouts': len(workouts),
+                'meals': len(meals)
+            })
+
+        return jsonify({
+            'period': 'weekly',
+            'start_date': start.date().isoformat(),
+            'end_date': now.date().isoformat(),
+            'total_workout_calories': round(total_workout_cal,1),
+            'total_meal_calories': int(total_meal_cal),
+            'day_breakdown': day_totals
+        }), 200
+
+    # default daily
+    start = today_start
+    end = start + timedelta(days=1)
+    workouts = Workout.query.filter(Workout.user_id == user_id, Workout.timestamp >= start, Workout.timestamp < end).all()
+    meals = Meal.query.filter(Meal.user_id == user_id, Meal.timestamp >= start, Meal.timestamp < end).all()
+    total_workout_cal = sum((w.calories or 0) for w in workouts)
+    total_meal_cal = sum((m.calories or 0) for m in meals)
+
+    # hourly breakdown (0-23)
+    hourly = []
+    for hour in range(24):
+        h_start = start + timedelta(hours=hour)
+        h_end = h_start + timedelta(hours=1)
+        w_cal = sum((w.calories or 0) for w in Workout.query.filter(Workout.user_id == user_id, Workout.timestamp >= h_start, Workout.timestamp < h_end).all())
+        m_cal = sum((m.calories or 0) for m in Meal.query.filter(Meal.user_id == user_id, Meal.timestamp >= h_start, Meal.timestamp < h_end).all())
+        hourly.append({'hour': hour, 'workout_calories': round(w_cal,1), 'meal_calories': int(m_cal)})
+
+    return jsonify({
+        'period': 'daily',
+        'date': start.date().isoformat(),
+        'total_workout_calories': round(total_workout_cal,1),
+        'total_meal_calories': int(total_meal_cal),
+        'workouts_count': len(workouts),
+        'meals_count': len(meals),
+        'hourly_breakdown': hourly
+    }), 200

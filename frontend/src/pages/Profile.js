@@ -1,4 +1,3 @@
-// react hook for managing form state
 import { useEffect, useState } from "react";
 
 function Profile() {
@@ -79,35 +78,37 @@ function Profile() {
     };
 
 
-    if (loading) return <div>Loading...</div>;
+    if (loading) return <div className="profile-wrapper"><div className="loading">Loading...</div></div>;
 
     return (
-        <div>
-            <h1>Profile</h1>
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label>Username</label>
-                    <input type="text" name="username" value={form.username} readOnly />
-                </div>
-                <div>
-                    <label>Email</label>
-                    <input type="email" name="email" value={form.email} readOnly />
-                </div>
-                <div>
-                    <label>Age</label>
-                    <input type="number" name="age" value={form.age} onChange={handleChange} />
-                </div>
-                <div>
-                    <label>Weight (kg)</label>
-                    <input type="number" name="weight" value={form.weight} onChange={handleChange} step="0.1" />
-                </div>
-                <div>
-                    <label>Height (cm)</label>
-                    <input type="number" name="height" value={form.height} onChange={handleChange} step="0.1" />
-                </div>
-                <button type="submit">Save Profile</button>
-            </form>
-            {message && <p>{message}</p>}
+        <div className="profile-wrapper">
+            <div className="profile-container">
+                <h1>Profile</h1>
+                <form onSubmit={handleSubmit}>
+                    <div className="profile-form-group">
+                        <label>Username</label>
+                        <input type="text" name="username" value={form.username} readOnly />
+                    </div>
+                    <div className="profile-form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" value={form.email} readOnly />
+                    </div>
+                    <div className="profile-form-group">
+                        <label>Age</label>
+                        <input type="number" name="age" value={form.age} onChange={handleChange} />
+                    </div>
+                    <div className="profile-form-group">
+                        <label>Weight (kg)</label>
+                        <input type="number" name="weight" value={form.weight} onChange={handleChange} step="0.1" />
+                    </div>
+                    <div className="profile-form-group">
+                        <label>Height (cm)</label>
+                        <input type="number" name="height" value={form.height} onChange={handleChange} step="0.1" />
+                    </div>
+                    <button type="submit">Save Profile</button>
+                </form>
+                {message && <div className="profile-message">{message}</div>}
+            </div>
         </div>
     );
 }
