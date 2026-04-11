@@ -1,6 +1,5 @@
-# fitlog
-Fitness tracking web app using Flask, React and SQLAlchemy. 
-The app allows users to log their workouts, view their workout history, and track their progress over time.
+# Fitlog
+Fitness-tracking web app (Flask backend + React frontend) for logging workouts and meals and viewing daily/weekly summaries.
 
 ## Tech Stack
 Backend: Flask, SQLAlchemy, Flask-Migrate, Flask-CORS
@@ -15,57 +14,70 @@ Architecture: App Factory pattern and Blueprints for routing
 	pip install flask flask-cors flask-sqlalchemy flask-migrate
 	pip install bcrypt # for password hashing
 
-	(will change to pip freeze > requirements.txt in the future for easier dependency management))
+## Features    
+    Register and log in (email + password)
+    Save basic profile info: age, sex, weight, height
+    Log workouts; calories are estimated on the server using METs and the user's weight
+    Log meals (calorie value supplied by user)
+    See recent workouts (with timestamps and simple icons (icons to be added)
+    View daily and weekly summaries on the Dashboard
 
 
-## Setup
+## Structure
+backend/app/models.py: data models
+backend/app/routes.py: REST API
+frontend/src/pages: React pages and UI logic
+frontend/src/App.css: centralized styling and theme
 
 
-set FLASK_RUN-run.py
+## Quick start (development)
+Backend
+    Create a virtualenv and install dependencies: `pip install flask flask-cors flask-sqlalchemy flask-migrate bcrypt`
+    Run the backend from the backend folder:
+     ```bash
+     cd backend
+     python run.py
+     ```
+The API runs at http://127.0.0.1:5000
 
-Initialize the database - run the following commands in the terminal
-	flask db init
-	flask db migrate -m "Initial migration"
-	flask db upgrade
+Frontend
 
+From the frontend folder run:
+     ```bash
+     npm install
+     npm start
+     ```
+The React app runs at http://localhost:3000
 
-Run the app - run the following commands in the terminal
-	cd backend
-	flask run (if not set FLASK_RUN-run.py, use python run.py instead))
+## Project layout 
+- backend/
+  - app/
+    - __init__.py — app factory, CORS and extensions
+    - extensions.py — single instances of db and migrate
+    - models.py — User, Workout, Meal
+    - routes.py — all API endpoints (blueprint registered at `/api`)
+  - run.py — starts the app in dev
 
-http://127.0.0.1:5000/ local development server (default Flask port)
+- frontend/
+  - src/
+    - App.js — routes and navigation
+    - pages/ — Register, Login, Workouts, Dashboard, Profile, Calendar
+    - App.css — global styles and theme
 
-http://127.0.0.1:3000/ local development server (default React port)
+## Data models and API
+How data works (brief)
+    Workouts: stored with name, duration (minutes), calculated calories (MET × weight × hours) and a timestamp (UTC). The server does the calorie calculation when you create a workout
+    Meals: stored with name, calories and timestamp (UTC).
+    Summaries: `/api/users/<id>/summary?period=daily|weekly` returns aggregated workout/meal calories and breakdowns used by the Dashboard
 
+On database & schema change:
+App uses SQLite by default (`sqlite:///flask_database.db`) On model changes, either:
+    Delete the DB file in `backend/instance` and restart (quick but destructive)
+    Or use Flask-Migrate to create and apply a migration (preserves data)
 
-when running, press Ctrl+C to stop the server
+## Notes and next steps
+Authentication is minimal: the app stores user_id in localStorage. Can replace with JWT or sessions for production
+MET-based calorie estimates are basic. Can later add intensity, better MET mapping, or BMR adjustments for accuracy
+Use backticks ` for for JavaScript variables in React components to avoid confusion with Markdown formatting
 
-http://127.0.0.1:5000/api/ test endpoint to verify backend is running
-
-
-
-## React setup
-1. install node.js and npm
-	npm install react-router-dom
-
-
-
-2. cd into the frontend directory
-3. npm start to start the React development server
-
-
-npm run build to create a production build of the React app 
-
-
-
-## Testing
-
-use .env files in each directory (frontend and backend) for local dev api url
-pip install python-dotenv to load environment variables from .env files in the backend
-
-
-# Notes
-Flask-SQLAlchemy is used for database management (ORM)
-Flask-Migrate is used for database migrations
-Flask-CORS is used to handle Cross-Origin Resource Sharing (CORS) issues when the frontend and backend are hosted on different domains or ports.
-Uses App Factory pattern to create the Flask app instance and manage configurations. This allows for better modularity and scalability of the application
+## Testing  
