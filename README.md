@@ -14,6 +14,8 @@ Architecture: App Factory pattern and Blueprints for routing
 	pip install flask flask-cors flask-sqlalchemy flask-migrate
 	pip install bcrypt # for password hashing
 
+    npm install react react-dom react-router-dom react-icons # for frontend dependencies
+
 ## Features    
     Register and log in (email + password)
     Save basic profile info: age, sex, weight, height
