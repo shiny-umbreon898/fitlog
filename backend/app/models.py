@@ -16,6 +16,10 @@ class User(db.Model):
     weight = db.Column(db.Float, nullable=True)  # Weight in kg
     height = db.Column(db.Float, nullable=True)  # Height in cm
         
+    # Password reset
+    reset_token = db.Column(db.String(100), unique=True, nullable=True)
+    token_expiry = db.Column(db.DateTime, nullable=True)
+    
     def __repr__(self):
         return f"<User {self.username}>"
 
@@ -45,4 +49,3 @@ class Meal(db.Model):
 
     def __repr__(self):
         return f"<Meal {self.name}>"
-

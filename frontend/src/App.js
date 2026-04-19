@@ -1,3 +1,6 @@
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+
 // default React app component from create-react-app
 import logo from './logo.svg';
 import './App.css';
@@ -52,6 +55,9 @@ function App() {
                 </nav>
 
                 <Routes>
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password/:token" element={<ResetPassword />} />
+
                     <Route path="/register" element={<Register />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/workouts" element={<Workouts />} />
