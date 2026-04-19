@@ -50,7 +50,7 @@ function Login() {
                 setError(data.error || data.message || "Login failed");
             }
         } catch (err) {
-            setError("Network error — please try again.");
+            setError("Network error ï¿½ please try again.");
         }
     };
 
