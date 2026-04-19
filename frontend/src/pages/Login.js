@@ -42,15 +42,14 @@ function Login() {
 
             if (response.ok) {
                 localStorage.setItem("user_id", data.user_id);
-                //navigate("/dashboard");
                 // go to dashboard after successful login
-                window.location.href = '/dashboard'; // reloads page and ensures all user-specific data is fetched fresh
+                window.location.href = '/dashboard'; 
 
             } else {
                 setError(data.error || data.message || "Login failed");
             }
         } catch (err) {
-            setError("Network error � please try again.");
+            setError("Network error – please try again.");
         }
     };
 
@@ -88,6 +87,14 @@ function Login() {
 
                 <button type="submit">Login</button>
             </form>
+
+            {/* Link for password reset project */}
+            <p style={{ marginTop: "15px" }}>
+                <a href="/forgot-password" style={{ color: "blue", textDecoration: "underline" }}>
+                    Forgot Password?
+                </a>
+            </p>
+
             {error && <p style={{ color: "red" }}>{error}</p>}
         </div>
     );
