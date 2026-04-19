@@ -7,6 +7,7 @@ import bcrypt
 import traceback
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
+from .email import send_welcome_email_async
 
 api_bp = Blueprint("api", __name__)
 
@@ -125,6 +126,12 @@ def create_user():
         print("Exception during db.session.commit():", ex)
         traceback.print_exc()
         return jsonify({"error": "internal_server_error", "detail": str(ex)}), 500
+
+    # send welcome email asynchronously (safe to fail)
+    try:
+        send_welcome_email_async(user.email, user.username)
+    except Exception as e:
+        print("Failed to trigger welcome email:", e)
 
     return jsonify({"id": user.id, "username": user.username, "email": user.email}), 201
 
