@@ -1151,16 +1151,10 @@ datalist option {
   background: linear-gradient(180deg, #60a5fa, #2563eb);
 }
 
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-=======
 .trend-bar-fill.workout {
   background: linear-gradient(180deg, #34d399, #059669);
 }
 
->>>>>>> origin/feature/workouts-advanced
->>>>>>> Stashed changes
 .trend-bar-label {
   font-size: 11px;
   color: #666;
@@ -1254,10 +1248,6 @@ datalist option {
   cursor: pointer;
 }
 
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-=======
 .workout-goal-card {
   display: grid;
   gap: 8px;
@@ -1269,8 +1259,6 @@ datalist option {
   color: #666;
 }
 
->>>>>>> origin/feature/workouts-advanced
->>>>>>> Stashed changes
 .meal-empty-state {
   border: 1px dashed #eef6ff;
   border-radius: 8px;
