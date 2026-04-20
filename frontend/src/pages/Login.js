@@ -43,7 +43,7 @@ function Login() {
             if (response.ok) {
                 localStorage.setItem("user_id", data.user_id);
                 // go to dashboard after successful login
-                window.location.href = '/dashboard'; 
+                navigate("/");
 
             } else {
                 setError(data.error || data.message || "Login failed");
