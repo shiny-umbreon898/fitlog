@@ -1,8 +1,6 @@
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
-// default React app component from create-react-app
-import logo from './logo.svg';
 import './App.css';
 
 // React Router component for handling navigation

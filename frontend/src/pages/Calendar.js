@@ -1,8 +1,5 @@
-// react hook for managing form state
-import { useState } from "react";
-
 function Calendar() {
-
+    return <div>Calendar view coming soon.</div>;
 
 }
 
