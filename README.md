@@ -54,17 +54,17 @@ The React app runs at http://localhost:3000
 ## Project layout 
 - backend/
   - app/
-    - __init__.py — app factory, CORS and extensions
-    - extensions.py — single instances of db and migrate
-    - models.py — User, Workout, Meal
-    - routes.py — all API endpoints (blueprint registered at `/api`)
-  - run.py — starts the app in dev
+    - __init__.py : app factory, CORS and extensions
+    - extensions.py : single instances of db and migrate
+    - models.py : User, Workout, Meal
+    - routes.py : all API endpoints (blueprint registered at `/api`)
+  - run.py : starts the app in dev
 
 - frontend/
   - src/
-    - App.js — routes and navigation
-    - pages/ — Register, Login, Workouts, Dashboard, Profile, Calendar
-    - App.css — global styles and theme
+    - App.js : routes and navigation
+    - pages/ : Register, Login, Workouts, Dashboard, Profile, Calendar
+    - App.css : global styles and theme
 
 ## Data models and API
 How data works (brief)
@@ -83,3 +83,10 @@ MET-based calorie estimates are basic. Can later add intensity, better MET mappi
 Use backticks ` for for JavaScript variables in React components to avoid confusion with Markdown formatting
 
 ## Testing  
+
+
+
+## Additional features to consider
+- Email verification and password reset confirmation
+- More detailed workout logging (e.g. sets/reps for strength training)
+- Date of Birth for accurate and automatic age calculation
