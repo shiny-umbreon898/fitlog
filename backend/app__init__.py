@@ -12,6 +12,18 @@ def create_app():
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
     print("FRONTEND_URL =", frontend_url)
 
+    # Check if email is configured (for user feedback)
+    mail_debug = os.getenv("MAIL_DEBUG", "").lower() in ("1", "true", "yes")
+    mail_host = os.getenv("MAIL_HOST")
+    if mail_debug:
+        print("[MAIL] Debug mode enabled - emails will print to console")
+    elif mail_host:
+        mail_port = os.getenv("MAIL_PORT")
+        print(f"[MAIL] SMTP configured - {mail_host}:{mail_port}")
+    else:
+        print("[MAIL] WARNING: Email not configured. Set MAIL_DEBUG=true or configure SMTP.")
+        print("[MAIL] See EMAIL_SETUP.md for setup instructions.")
+
     # allow dev frontend (restrict in production)
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
