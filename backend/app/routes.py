@@ -64,6 +64,45 @@ def estimate_calories(met, weight_kg, duration_minutes):
         return 0.0
 
 
+def _calculate_workout_streak(workouts):
+    """Calculate current and longest workout-day streaks from workouts."""
+    if not workouts:
+        return {
+            "current_streak_days": 0,
+            "longest_streak_days": 0,
+            "active_today": False,
+            "last_workout_date": None,
+        }
+
+    workout_dates = sorted({w.timestamp.date() for w in workouts})
+    workout_date_set = set(workout_dates)
+    today = datetime.utcnow().date()
+
+    current_streak = 0
+    cursor = today
+    while cursor in workout_date_set:
+        current_streak += 1
+        cursor -= timedelta(days=1)
+
+    longest_streak = 0
+    run = 0
+    prev = None
+    for day in workout_dates:
+        if prev and day == prev + timedelta(days=1):
+            run += 1
+        else:
+            run = 1
+        longest_streak = max(longest_streak, run)
+        prev = day
+
+    return {
+        "current_streak_days": current_streak,
+        "longest_streak_days": longest_streak,
+        "active_today": today in workout_date_set,
+        "last_workout_date": workout_dates[-1].isoformat(),
+    }
+
+
 # USER AUTHENTICATION ROUTES
 
 @api_bp.route("/", methods=["GET"]) 
@@ -193,6 +232,17 @@ def create_workout():
 def get_workouts(user_id):
     workouts = Workout.query.filter_by(user_id=user_id).order_by(Workout.timestamp.desc()).all()
     return jsonify([{"id": w.id, "name": w.name, "duration": w.duration, "calories": w.calories, "timestamp": w.timestamp.isoformat()} for w in workouts]), 200
+
+
+@api_bp.route("/users/<int:user_id>/workouts/streak", methods=["GET"])
+def get_workout_streak(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "user not found"}), 404
+
+    workouts = Workout.query.filter_by(user_id=user_id).all()
+    streak = _calculate_workout_streak(workouts)
+    return jsonify(streak), 200
 
 @api_bp.route("/workouts/<int:workout_id>", methods=["PUT"])
 def update_workout(workout_id):
