@@ -432,6 +432,64 @@ datalist option {
   background-color: #d0e2ff;
 }
 
+.workouts-container.pro {
+  max-width: 1080px;
+}
+
+.workouts-hero {
+  padding: 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1f6feb, #3b82f6);
+  color: white;
+  margin-bottom: 16px;
+}
+
+.workouts-hero h1,
+.workouts-hero p {
+  color: white;
+  margin: 0;
+}
+
+.workouts-hero p {
+  margin-top: 8px;
+  opacity: 0.95;
+}
+
+.workouts-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.workouts-stat-card {
+  border: 1px solid #eef6ff;
+  border-radius: 12px;
+  padding: 14px;
+  text-align: left;
+  background-color: #fff;
+}
+
+.workouts-stat-card span {
+  display: block;
+  color: #666;
+  font-size: 12px;
+}
+
+.workouts-stat-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 18px;
+}
+
+.workout-form.pro {
+  border: 1px solid #eef6ff;
+}
+
+.workout-list.pro .workout-item {
+  justify-content: space-between;
+}
+
 /* PROFILE */
 
 .profile-wrapper {
@@ -864,3 +922,480 @@ datalist option {
 .modal-content { background: white; padding: 32px; border-radius: 28px; width: 90%; max-width: 400px; }
 .modal-form { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
 .modal-form input, .modal-form select { padding: 12px; border-radius: 8px; border: 1px solid #d1d5db; width: 100%; box-sizing: border-box; }
+
+/* MEALS (ADVANCED TRACKER) */
+.meals-wrapper {
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.meals-container.pro {
+  max-width: 1080px;
+}
+
+.meals-hero {
+  padding: 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0b66ff, #4d8dff);
+  color: white;
+  margin-bottom: 16px;
+}
+
+.meals-hero h1,
+.meals-hero p {
+  color: white;
+  margin: 0;
+}
+
+.meals-hero p {
+  margin-top: 8px;
+  opacity: 0.95;
+}
+
+.meals-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.meals-stat-card {
+  background-color: #ffffff;
+  border: 1px solid #eef6ff;
+  border-radius: 12px;
+  padding: 14px;
+  text-align: left;
+}
+
+.meals-stat-card span {
+  display: block;
+  color: #666;
+  font-size: 12px;
+}
+
+.meals-stat-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 18px;
+  color: #0b2a4a;
+}
+
+.meal-form.pro {
+  border: 1px solid #eef6ff;
+}
+
+.meal-form.pro h2 {
+  margin-bottom: 8px;
+}
+
+.quick-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.quick-add-row span {
+  color: #666;
+  font-size: 12px;
+}
+
+.quick-add-row button {
+  border: 1px solid #eef6ff;
+  background-color: #fff;
+  color: #0b2a4a;
+  border-radius: 999px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.quick-add-row button:hover {
+  background-color: #f0f6ff;
+}
+
+.meals-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 0;
+}
+
+.meals-controls input {
+  flex: 1;
+}
+
+.range-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.range-buttons button {
+  border: 1px solid #eef6ff;
+  background-color: #fff;
+  color: #0b2a4a;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.range-buttons button.active {
+  background-color: #0b66ff;
+  border-color: #0b66ff;
+  color: #fff;
+}
+
+.custom-range-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 6px 0 14px;
+}
+
+.custom-range-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 13px;
+}
+
+.goal-card {
+  border: 1px solid #eef6ff;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.goal-card h3 {
+  margin: 0 0 4px;
+}
+
+.goal-card p {
+  margin: 0;
+  color: #666;
+}
+
+.goal-streak-copy {
+  margin-top: 6px !important;
+  font-size: 12px;
+  color: #0b2a4a !important;
+  font-weight: 600;
+}
+
+.goal-card input {
+  width: 110px;
+}
+
+.goal-progress-track {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background-color: #f7f7f9;
+}
+
+.goal-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+}
+
+.meals-analytics-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.analytics-card {
+  border: 1px solid #eef6ff;
+  border-radius: 12px;
+  padding: 14px;
+  background-color: #fff;
+}
+
+.trend-bars {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+  height: 180px;
+  margin-top: 10px;
+}
+
+.trend-bar-item {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.trend-bar-track {
+  height: 120px;
+  width: 26px;
+  border-radius: 999px;
+  background-color: #f7f7f9;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.trend-bar-fill {
+  width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #60a5fa, #2563eb);
+}
+
+.trend-bar-fill.workout {
+  background: linear-gradient(180deg, #34d399, #059669);
+}
+
+.trend-bar-label {
+  font-size: 11px;
+  color: #666;
+}
+
+.trend-bar-value {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0b2a4a;
+}
+
+.type-breakdown {
+  list-style: none;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.type-breakdown li {
+  border: 1px solid #eef6ff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meal-list.pro {
+  margin-top: 10px;
+}
+
+.meal-item.pro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.meal-meta {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.meal-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meal-calorie-pill {
+  border-radius: 999px;
+  background-color: #f0f6ff;
+  color: #0b66ff;
+  font-weight: 700;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.meal-row-btn {
+  border: 1px solid #eef6ff;
+  background-color: #fff;
+  color: #0b2a4a;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.meal-row-btn:hover {
+  background-color: #f0f6ff;
+}
+
+.meal-row-btn.danger {
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.25);
+}
+
+.meal-edit-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr 1fr auto auto;
+  gap: 8px;
+  width: 100%;
+}
+
+.meal-edit-row button {
+  border: 1px solid #eef6ff;
+  background-color: #fff;
+  color: #0b2a4a;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.workout-goal-card {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.workout-goal-card p {
+  margin: 0;
+  color: #666;
+}
+
+.meal-empty-state {
+  border: 1px dashed #eef6ff;
+  border-radius: 8px;
+  padding: 18px;
+  text-align: center;
+  color: #666;
+}
+
+.timeline-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.timeline-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 13px;
+}
+
+.timeline-count {
+  color: #666;
+  font-size: 13px;
+}
+
+.export-btn {
+  border: 1px solid #eef6ff;
+  background-color: #fff;
+  color: #0b2a4a;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.export-btn:hover {
+  background-color: #f0f6ff;
+}
+
+.timeline-pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.timeline-pagination button {
+  border: 1px solid #eef6ff;
+  background-color: #fff;
+  color: #0b2a4a;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.timeline-pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.page-numbers-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.page-number-btn {
+  border: 1px solid #eef6ff;
+  background-color: #fff;
+  color: #0b2a4a;
+  border-radius: 8px;
+  min-width: 34px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.page-number-btn.active {
+  background-color: #0b66ff;
+  color: #fff;
+  border-color: #0b66ff;
+}
+
+@media (max-width: 768px) {
+  .meals-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .meals-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .goal-card {
+    grid-template-columns: 1fr;
+  }
+
+  .custom-range-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .meals-analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .meal-item.pro {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .meal-row-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .meal-edit-row {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .timeline-pagination {
+    justify-content: space-between;
+  }
+
+  .page-numbers-row {
+    justify-content: flex-start;
+  }
+}
