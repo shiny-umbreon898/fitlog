@@ -186,21 +186,111 @@ def get_workouts(user_id):
     workouts = Workout.query.filter_by(user_id=user_id).order_by(Workout.timestamp.desc()).all()
     return jsonify([{"id": w.id, "name": w.name, "duration": w.duration, "calories": w.calories, "timestamp": w.timestamp.isoformat()} for w in workouts]), 200
 
+@api_bp.route("/workouts/<int:workout_id>", methods=["PUT"])
+def update_workout(workout_id):
+    data = request.get_json() or {}
+    workout = Workout.query.get(workout_id)
+    if not workout:
+        return jsonify({"error": "workout not found"}), 404
+
+    name = str(data.get("name", workout.name)).strip()
+    if not name:
+        return jsonify({"error": "workout name required"}), 400
+
+    try:
+        duration = int(data.get("duration", workout.duration))
+    except Exception:
+        return jsonify({"error": "invalid duration"}), 400
+
+    if duration <= 0 or duration > 1440:
+        return jsonify({"error": "duration must be 1-1440 minutes"}), 400
+
+    user = User.query.get(workout.user_id)
+    if not user:
+        return jsonify({"error": "user not found"}), 404
+
+    met = MET_VALUES.get(name.lower(), 6.0)
+    calories = estimate_calories(met, user.weight, duration)
+
+    workout.name = name
+    workout.duration = duration
+    workout.calories = round(calories, 1)
+    db.session.commit()
+
+    return jsonify({"message": "workout updated", "calories": workout.calories}), 200
+
+@api_bp.route("/workouts/<int:workout_id>", methods=["DELETE"])
+def delete_workout(workout_id):
+    workout = Workout.query.get(workout_id)
+    if not workout:
+        return jsonify({"error": "workout not found"}), 404
+
+    db.session.delete(workout)
+    db.session.commit()
+    return jsonify({"message": "workout deleted"}), 200
+
 
 # MEAL ROUTES
 
 @api_bp.route("/meals", methods=["POST"])
 def create_meal():
     data = request.get_json()
-    meal = Meal(name=data["name"], calories=data["calories"], user_id=data["user_id"], timestamp=datetime.utcnow())
+    meal = Meal(
+        name=data["name"],
+        calories=data["calories"],
+        description=data.get("description"),
+        user_id=data["user_id"],
+        timestamp=datetime.utcnow()
+    )
     db.session.add(meal)
     db.session.commit()
-    return jsonify({"message": "meal created"}), 201
+    return jsonify({"message": "meal created", "id": meal.id}), 201
 
 @api_bp.route("/users/<int:user_id>/meals", methods=["GET"])
 def get_meals(user_id):
     meals = Meal.query.filter_by(user_id=user_id).order_by(Meal.timestamp.desc()).all()
-    return jsonify([{"id": m.id, "name": m.name, "calories": m.calories, "timestamp": m.timestamp.isoformat()} for m in meals]), 200
+    return jsonify([
+        {
+            "id": m.id,
+            "name": m.name,
+            "description": m.description,
+            "calories": m.calories,
+            "timestamp": m.timestamp.isoformat()
+        } for m in meals
+    ]), 200
+
+@api_bp.route("/meals/<int:meal_id>", methods=["PUT"])
+def update_meal(meal_id):
+    data = request.get_json() or {}
+    meal = Meal.query.get(meal_id)
+    if not meal:
+        return jsonify({"error": "meal not found"}), 404
+
+    if "name" in data and str(data["name"]).strip():
+        meal.name = data["name"].strip()
+    if "calories" in data:
+        try:
+            calories = int(data["calories"])
+            if calories <= 0:
+                return jsonify({"error": "calories must be greater than 0"}), 400
+            meal.calories = calories
+        except Exception:
+            return jsonify({"error": "invalid calories"}), 400
+    if "description" in data:
+        meal.description = data["description"]
+
+    db.session.commit()
+    return jsonify({"message": "meal updated"}), 200
+
+@api_bp.route("/meals/<int:meal_id>", methods=["DELETE"])
+def delete_meal(meal_id):
+    meal = Meal.query.get(meal_id)
+    if not meal:
+        return jsonify({"error": "meal not found"}), 404
+
+    db.session.delete(meal)
+    db.session.commit()
+    return jsonify({"message": "meal deleted"}), 200
 
 
 # SUMMARY ROUTE (Daily / Weekly) - used by frontend Dashboard
