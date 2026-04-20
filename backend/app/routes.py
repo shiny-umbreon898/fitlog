@@ -66,7 +66,7 @@ def estimate_calories(met, weight_kg, duration_minutes):
 
 # USER AUTHENTICATION ROUTES
 
-@api_bp.route("/", methods=["GET"])
+@api_bp.route("/", methods=["GET"]) 
 def index():
     return jsonify({"message": "Welcome to FITLOG API"})
 
@@ -112,7 +112,7 @@ def login():
 
 # USER PROFILE ROUTES
 
-@api_bp.route("/users/<int:user_id>", methods=["PUT"])
+@api_bp.route("/users/<int:user_id>", methods=["PUT"]) 
 def update_user(user_id):
     data = request.get_json()
     user = User.query.get(user_id)
@@ -131,7 +131,7 @@ def update_user(user_id):
     db.session.commit()
     return jsonify({"message": "profile updated"}), 200
 
-@api_bp.route("/users/<int:user_id>", methods=["GET"])
+@api_bp.route("/users/<int:user_id>", methods=["GET"]) 
 def get_user(user_id):
     user = User.query.get(user_id)
     if not user:
@@ -147,7 +147,7 @@ def get_user(user_id):
         "height": user.height
     }), 200
 
-@api_bp.route("/users/<int:user_id>", methods=["DELETE"])
+@api_bp.route("/users/<int:user_id>", methods=["DELETE"]) 
 def delete_user(user_id):
     user = User.query.get(user_id)
     if not user: return jsonify({"error": "user not found"}), 404
@@ -201,6 +201,81 @@ def create_meal():
 def get_meals(user_id):
     meals = Meal.query.filter_by(user_id=user_id).order_by(Meal.timestamp.desc()).all()
     return jsonify([{"id": m.id, "name": m.name, "calories": m.calories, "timestamp": m.timestamp.isoformat()} for m in meals]), 200
+
+
+# SUMMARY ROUTE (Daily / Weekly) - used by frontend Dashboard
+@api_bp.route('/users/<int:user_id>/summary', methods=['GET'])
+def user_summary(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "user not found"}), 404
+
+    period = request.args.get('period', 'daily')
+    now = datetime.utcnow()
+
+    if period == 'daily':
+        # start of today (UTC)
+        start = datetime(now.year, now.month, now.day)
+        end = start + timedelta(days=1)
+
+        workouts = Workout.query.filter(Workout.user_id==user_id, Workout.timestamp>=start, Workout.timestamp<end).all()
+        meals = Meal.query.filter(Meal.user_id==user_id, Meal.timestamp>=start, Meal.timestamp<end).all()
+
+        workouts_count = len(workouts)
+        total_workout_calories = sum((w.calories or 0) for w in workouts)
+        meals_count = len(meals)
+        total_meal_calories = sum((m.calories or 0) for m in meals)
+
+        # hourly breakdown for 24 hours (0-23)
+        hourly = []
+        for hour in range(24):
+            h_start = start + timedelta(hours=hour)
+            h_end = h_start + timedelta(hours=1)
+            w_sum = sum((w.calories or 0) for w in workouts if h_start <= w.timestamp < h_end)
+            m_sum = sum((m.calories or 0) for m in meals if h_start <= m.timestamp < h_end)
+            hourly.append({"hour": hour, "workout_calories": round(w_sum, 1), "meal_calories": int(m_sum)})
+
+        return jsonify({
+            "period": "daily",
+            "date": start.strftime('%Y-%m-%d'),
+            "workouts_count": workouts_count,
+            "total_workout_calories": round(total_workout_calories, 1),
+            "meals_count": meals_count,
+            "total_meal_calories": int(total_meal_calories),
+            "hourly_breakdown": hourly
+        }), 200
+
+    elif period == 'weekly':
+        # 7-day window ending today (inclusive)
+        end = datetime(now.year, now.month, now.day) + timedelta(days=1)
+        start = end - timedelta(days=7)
+
+        workouts = Workout.query.filter(Workout.user_id==user_id, Workout.timestamp>=start, Workout.timestamp<end).all()
+        meals = Meal.query.filter(Meal.user_id==user_id, Meal.timestamp>=start, Meal.timestamp<end).all()
+
+        total_workout_calories = sum((w.calories or 0) for w in workouts)
+        total_meal_calories = sum((m.calories or 0) for m in meals)
+
+        # daily breakdown for each day in window
+        day_breakdown = []
+        for d in range(7):
+            day_start = start + timedelta(days=d)
+            day_end = day_start + timedelta(days=1)
+            w_sum = sum((w.calories or 0) for w in workouts if day_start <= w.timestamp < day_end)
+            m_sum = sum((m.calories or 0) for m in meals if day_start <= m.timestamp < day_end)
+            day_breakdown.append({"date": day_start.strftime('%Y-%m-%d'), "workout_calories": round(w_sum, 1), "meal_calories": int(m_sum)})
+
+        return jsonify({
+            "period": "weekly",
+            "start_date": start.strftime('%Y-%m-%d'),
+            "end_date": (end - timedelta(days=1)).strftime('%Y-%m-%d'),
+            "total_workout_calories": round(total_workout_calories, 1),
+            "total_meal_calories": int(total_meal_calories),
+            "day_breakdown": day_breakdown
+        }), 200
+
+    else:
+        return jsonify({"error": "invalid period"}), 400
 
 
 # PASSWORD RESET ROUTES
