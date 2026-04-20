@@ -134,6 +134,7 @@ function Register() {
                             type="checkbox"
                             onChange={() => setShowPassword(!showPassword)}
                         />
+                        Show Password
                     </label>
                 </div>
 
