@@ -129,7 +129,15 @@ def update_user(user_id):
         user.height = data["height"]
 
     db.session.commit()
-    return jsonify({"message": "profile updated"}), 200
+    return jsonify({
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "age": user.age,
+        "sex": user.sex,
+        "weight": user.weight,
+        "height": user.height
+    }), 200
 
 @api_bp.route("/users/<int:user_id>", methods=["GET"]) 
 def get_user(user_id):
@@ -185,6 +193,49 @@ def create_workout():
 def get_workouts(user_id):
     workouts = Workout.query.filter_by(user_id=user_id).order_by(Workout.timestamp.desc()).all()
     return jsonify([{"id": w.id, "name": w.name, "duration": w.duration, "calories": w.calories, "timestamp": w.timestamp.isoformat()} for w in workouts]), 200
+
+@api_bp.route("/workouts/<int:workout_id>", methods=["PUT"])
+def update_workout(workout_id):
+    data = request.get_json() or {}
+    workout = Workout.query.get(workout_id)
+    if not workout:
+        return jsonify({"error": "workout not found"}), 404
+
+    name = str(data.get("name", workout.name)).strip()
+    if not name:
+        return jsonify({"error": "workout name required"}), 400
+
+    try:
+        duration = int(data.get("duration", workout.duration))
+    except Exception:
+        return jsonify({"error": "invalid duration"}), 400
+
+    if duration <= 0 or duration > 1440:
+        return jsonify({"error": "duration must be 1-1440 minutes"}), 400
+
+    user = User.query.get(workout.user_id)
+    if not user:
+        return jsonify({"error": "user not found"}), 404
+
+    met = MET_VALUES.get(name.lower(), 6.0)
+    calories = estimate_calories(met, user.weight, duration)
+
+    workout.name = name
+    workout.duration = duration
+    workout.calories = round(calories, 1)
+    db.session.commit()
+
+    return jsonify({"message": "workout updated", "calories": workout.calories}), 200
+
+@api_bp.route("/workouts/<int:workout_id>", methods=["DELETE"])
+def delete_workout(workout_id):
+    workout = Workout.query.get(workout_id)
+    if not workout:
+        return jsonify({"error": "workout not found"}), 404
+
+    db.session.delete(workout)
+    db.session.commit()
+    return jsonify({"message": "workout deleted"}), 200
 
 
 # MEAL ROUTES
