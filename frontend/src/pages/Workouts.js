@@ -27,6 +27,12 @@ function Workouts() {
     const [page, setPage] = useState(1);
     const [editingWorkoutId, setEditingWorkoutId] = useState(null);
     const [editForm, setEditForm] = useState({ name: "", duration: "" });
+    const [workoutStreak, setWorkoutStreak] = useState({
+        current_streak_days: 0,
+        longest_streak_days: 0,
+        active_today: false,
+        last_workout_date: null,
+    });
     const pageSize = 6;
 
     const ICONS = {
@@ -70,6 +76,16 @@ function Workouts() {
                 setWorkouts(data);
             } else {
                 console.error("Failed to fetch workouts");
+            }
+        } catch (e) {
+            console.error(e);
+        }
+
+        try {
+            const streakRes = await fetch(`${API_URL}/api/users/${userId}/workouts/streak`);
+            if (streakRes.ok) {
+                const streakData = await streakRes.json();
+                setWorkoutStreak(streakData);
             }
         } catch (e) {
             console.error(e);
@@ -379,6 +395,11 @@ function Workouts() {
                     <div className="workouts-stat-card"><span>Total calories</span><strong>{stats.totalCalories} kcal</strong></div>
                     <div className="workouts-stat-card"><span>Avg duration</span><strong>{stats.avgDuration} min</strong></div>
                     <div className="workouts-stat-card"><span>Top workout</span><strong>{stats.topWorkout ? `${stats.topWorkout.name} (${Math.round(stats.topWorkout.calories || 0)} kcal)` : "--"}</strong></div>
+                    <div className="workouts-stat-card">
+                        <span>Workout streak</span>
+                        <strong>{workoutStreak.current_streak_days} day{workoutStreak.current_streak_days === 1 ? "" : "s"}</strong>
+                        <span>Best: {workoutStreak.longest_streak_days} day{workoutStreak.longest_streak_days === 1 ? "" : "s"}</span>
+                    </div>
                 </div>
 
                 {showProfileModal && (
