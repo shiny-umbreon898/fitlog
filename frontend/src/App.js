@@ -12,6 +12,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Workouts from "./pages/Workouts";
+import Meals from "./pages/Meals";
 
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
@@ -43,6 +44,7 @@ function App() {
                             <Link to="/">Dashboard</Link>
                             <Link to="/calendar">Calendar</Link>
                             <Link to="/workouts">Workouts</Link>
+                            <Link to="/meals">Meals</Link>
                             <Link to="/profile">Profile</Link>
                             <button onClick={handleLogout}>Logout</button>
                         </>
@@ -61,6 +63,7 @@ function App() {
                     <Route path="/register" element={<Register />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/workouts" element={<Workouts />} />
+                    <Route path="/meals" element={<Meals />} />
 
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/profile" element={<Profile />} />
