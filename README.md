@@ -77,16 +77,25 @@ App uses SQLite by default (`sqlite:///flask_database.db`) On model changes, eit
     Delete the DB file in `backend/instance` and restart (quick but destructive)
     Or use Flask-Migrate to create and apply a migration (preserves data)
 
-## Notes and next steps
+## Testing  
+
+
+## Bugs
+- Nav bar not changong on account login/logout (still shows Register/Login after logging in)
+  but changes to correct options after refreshing the page (bug in state management, needs fixing)
+- Cycling/Swimming workouts not being logged
+
+
+## Additional features to consider
+- Calendar view for workouts and meals (FullCalendar React component)
+- Email verification and password reset confirmation
+- More detailed workout logging (e.g. sets/reps for strength training)
+- Date of Birth for accurate and automatic age calculation
+
+
+## Notes
 Authentication is minimal: the app stores user_id in localStorage. Can replace with JWT or sessions for production
 MET-based calorie estimates are basic. Can later add intensity, better MET mapping, or BMR adjustments for accuracy
 Use backticks ` for for JavaScript variables in React components to avoid confusion with Markdown formatting
 
-## Testing  
 
-
-
-## Additional features to consider
-- Email verification and password reset confirmation
-- More detailed workout logging (e.g. sets/reps for strength training)
-- Date of Birth for accurate and automatic age calculation
