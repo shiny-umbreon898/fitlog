@@ -64,6 +64,21 @@ def estimate_calories(met, weight_kg, duration_minutes):
         return 0.0
 
 
+def calculate_age_from_dob(date_of_birth):
+    """
+    Calculate age from date of birth.
+    Returns None if date_of_birth is None.
+    """
+    if not date_of_birth:
+        return None
+    today = datetime.utcnow().date()
+    age = today.year - date_of_birth.year
+    # Adjust for birthday not yet occurred this year
+    if (today.month, today.day) < (date_of_birth.month, date_of_birth.day):
+        age -= 1
+    return age
+
+
 def _calculate_workout_streak(workouts):
     """Calculate current and longest workout-day streaks from workouts."""
     if not workouts:
@@ -116,8 +131,17 @@ def hello():
 @api_bp.route("/users", methods=["POST"])
 def create_user():
     data = request.get_json()
-    if not data or not all(k in data for k in ("username", "email", "password")):
-        return jsonify({"error": "username, email and password required"}), 400
+    if not data or not all(k in data for k in ("username", "email", "password", "date_of_birth")):
+        return jsonify({"error": "username, email, password, and date_of_birth required"}), 400
+
+    # Validate age (must be 16 or older)
+    try:
+        dob = datetime.strptime(data["date_of_birth"], "%Y-%m-%d").date()
+        age = calculate_age_from_dob(dob)
+        if age is None or age < 16:
+            return jsonify({"error": "You must be at least 16 years old to use this app"}), 400
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
 
     if User.query.filter_by(username=data["username"]).first():
         return jsonify({"error": "username already exists"}), 409
@@ -125,7 +149,12 @@ def create_user():
         return jsonify({"error": "email already exists"}), 409
 
     hashed_password = bcrypt.hashpw(data["password"].encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-    user = User(username=data["username"], email=data["email"], password=hashed_password)
+    user = User(
+        username=data["username"], 
+        email=data["email"], 
+        password=hashed_password,
+        date_of_birth=dob
+    )
 
     db.session.add(user)
     try:
@@ -158,8 +187,17 @@ def update_user(user_id):
     if not user:
         return jsonify({"error": "user not found"}), 404
 
-    if "age" in data:
-        user.age = data["age"]
+    # Handle date_of_birth update
+    if "date_of_birth" in data and data["date_of_birth"]:
+        try:
+            dob = datetime.strptime(data["date_of_birth"], "%Y-%m-%d").date()
+            age = calculate_age_from_dob(dob)
+            if age is None or age < 16:
+                return jsonify({"error": "You must be at least 16 years old to use this app"}), 400
+            user.date_of_birth = dob
+        except ValueError:
+            return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
+    
     if "sex" in data:
         user.sex = data["sex"]
     if "weight" in data:
@@ -168,15 +206,7 @@ def update_user(user_id):
         user.height = data["height"]
 
     db.session.commit()
-    return jsonify({
-        "id": user.id,
-        "username": user.username,
-        "email": user.email,
-        "age": user.age,
-        "sex": user.sex,
-        "weight": user.weight,
-        "height": user.height
-    }), 200
+    return jsonify({"message": "profile updated"}), 200
 
 @api_bp.route("/users/<int:user_id>", methods=["GET"]) 
 def get_user(user_id):
@@ -188,7 +218,8 @@ def get_user(user_id):
         "id": user.id,
         "username": user.username,
         "email" : user.email,
-        "age": user.age,
+        "age": user.get_age(),
+        "date_of_birth": user.date_of_birth.isoformat() if user.date_of_birth else None,
         "sex": user.sex,
         "weight": user.weight,
         "height": user.height

@@ -17,7 +17,8 @@ function Workouts() {
 
     const [profile, setProfile] = useState(null);
     const [showProfileModal, setShowProfileModal] = useState(false);
-    const [profileForm, setProfileForm] = useState({ age: "", sex: "", weight: "", height: "" });
+    const [profileForm, setProfileForm] = useState({ date_of_birth: "", sex: "", weight: "", height: "" });
+    const [profileError, setProfileError] = useState("");
     const [dailyBurnTarget, setDailyBurnTarget] = useState(500);
     const [range, setRange] = useState("7d");
     const [customStartDate, setCustomStartDate] = useState("");
@@ -53,13 +54,13 @@ function Workouts() {
                 const pData = await pRes.json();
                 setProfile(pData);
                 setProfileForm({
-                    age: pData.age ?? "",
+                    date_of_birth: pData.date_of_birth || "",
                     sex: pData.sex ?? "",
                     weight: pData.weight ?? "",
                     height: pData.height ?? "",
                 });
 
-                if (pData.age == null || pData.weight == null || pData.height == null || !pData.sex) {
+                if (!pData.date_of_birth || pData.weight == null || pData.height == null || !pData.sex) {
                     setShowProfileModal(true);
                 }
             } else {
@@ -112,14 +113,23 @@ function Workouts() {
     };
 
     const validateProfile = (p) => {
-        const age = Number(p.age);
+        if (!p.date_of_birth) return "Date of birth is required";
+        
+        const today = new Date();
+        const birthDate = new Date(p.date_of_birth);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
+        if (age < 16) return "You must be at least 16 years old to use this app";
+        if (!p.sex) return "Sex is required";
+        if (!['male', 'female', 'm', 'f'].includes(p.sex.toLowerCase())) return "Sex must be Male or Female";
+        
         const weight = Number(p.weight);
         const height = Number(p.height);
-        const sex = (p.sex || "").toString().trim();
-
-        if (!sex) return "Sex is required";
-        if (!["male", "female", "m", "f"].includes(sex.toLowerCase())) return "Sex must be Male or Female";
-        if (!Number.isFinite(age) || age < 5 || age > 120) return "Age must be between 5 and 120";
         if (!Number.isFinite(weight) || weight < 20 || weight > 500) return "Weight must be between 20kg and 500kg";
         if (!Number.isFinite(height) || height < 50 || height > 300) return "Height must be between 50cm and 300cm";
         return null;
@@ -127,15 +137,16 @@ function Workouts() {
 
     const submitProfile = async (e) => {
         e.preventDefault();
+        setProfileError("");
 
         const validationError = validateProfile(profileForm);
         if (validationError) {
-            alert(validationError);
+            setProfileError(validationError);
             return;
         }
 
         const payload = {
-            age: profileForm.age === "" ? null : Number(profileForm.age),
+            date_of_birth: profileForm.date_of_birth,
             sex: profileForm.sex || null,
             weight: profileForm.weight === "" ? null : Number(profileForm.weight),
             height: profileForm.height === "" ? null : Number(profileForm.height),
@@ -153,17 +164,17 @@ function Workouts() {
                 setShowProfileModal(false);
             } else {
                 const err = await res.json();
-                alert(err.error || "Profile update failed");
+                setProfileError(err.error || "Profile update failed");
             }
         } catch (err) {
-            alert("Network error");
+            setProfileError("Network error");
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!profile || profile.age == null || profile.weight == null || profile.height == null || !profile.sex) {
+        if (!profile || !profile.date_of_birth || profile.weight == null || profile.height == null || !profile.sex) {
             setShowProfileModal(true);
             return;
         }
@@ -408,8 +419,15 @@ function Workouts() {
                             <h2>Complete Profile</h2>
                             <form onSubmit={submitProfile}>
                                 <div>
-                                    <label>Age</label>
-                                    <input name="age" type="number" value={profileForm.age} onChange={handleProfileChange} required min="5" max="120" />
+                                    <label>Date of Birth</label>
+                                    <input 
+                                        type="date" 
+                                        name="date_of_birth"
+                                        value={profileForm.date_of_birth} 
+                                        onChange={handleProfileChange} 
+                                        required 
+                                        max={new Date().toISOString().split('T')[0]}
+                                    />
                                 </div>
                                 <div>
                                     <label>Sex</label>
@@ -427,6 +445,7 @@ function Workouts() {
                                     <label>Height (cm)</label>
                                     <input name="height" type="number" step="0.1" value={profileForm.height} onChange={handleProfileChange} required min="50" max="300" />
                                 </div>
+                                {profileError && <p style={{ color: "#d32f2f" }}>{profileError}</p>}
                                 <button type="submit">Save</button>
                                 <button type="button" onClick={() => setShowProfileModal(false)}>Cancel</button>
                             </form>
