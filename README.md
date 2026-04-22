@@ -17,13 +17,22 @@ Architecture: App Factory pattern and Blueprints for routing
     npm install react react-dom react-router-dom react-icons # for frontend dependencies
 
 ## Features    
-    Register and log in (email + password)
-    Save basic profile info: age, sex, weight, height
+    Register and log in (email + password + date of birth)
+    Automatic age calculation from date of birth
+    Age verification: Users must be at least 16 years old to use the app
+    Save basic profile info: date of birth, sex, weight, height
     Log workouts; calories are estimated on the server using METs and the user's weight
     Log meals (calorie value supplied by user)
-    See recent workouts (with timestamps and simple icons (icons to be added)
+    See recent workouts (with timestamps and activity icons)
     View daily and weekly summaries on the Dashboard
 
+
+## Age Verification & Privacy
+**Important:** Fitlog stores user body metrics (weight, height, age) to provide accurate calorie burn estimates. For this reason, the app is restricted to users 16 years and older. This age requirement:
+- Is enforced on both client and server side
+- Is validated during account creation
+- Can be updated in the profile settings
+- Ensures responsible use of the app for users who are developing and conscious of health metrics
 
 ## Structure
 backend/app/models.py: data models
@@ -70,7 +79,15 @@ The React app runs at http://localhost:3000
 How data works (brief)
     Workouts: stored with name, duration (minutes), calculated calories (MET × weight × hours) and a timestamp (UTC). The server does the calorie calculation when you create a workout
     Meals: stored with name, calories and timestamp (UTC).
-    Summaries: `/api/users/<id>/summary?period=daily|weekly` returns aggregated workout/meal calories and breakdowns used by the Dashboard
+    Summaries: `/api/users/<id>/summary?period=daily|weekly` returns aggregated workout/meal calories and breakdowns used by the Dashboard 
+    Age Calculation: User date_of_birth is stored in the database and age is automatically calculated. This ensures users always see their current age without manual updates
+
+### API Endpoints (excerpt):
+    POST /api/users : Register new user (requires date_of_birth, validates age >= 16)
+    POST /api/users/login : Login with email and password
+    GET /api/users/<id> : Get user profile (includes calculated age)
+    PUT /api/users/<id> : Update user profile (sex, weight, height, date_of_birth)
+    GET /api/users/<id>/summary?period=daily|weekly : Get daily/weekly workout and meal summaries
 
 On database & schema change:
 App uses SQLite by default (`sqlite:///flask_database.db`) On model changes, either:
@@ -81,7 +98,7 @@ App uses SQLite by default (`sqlite:///flask_database.db`) On model changes, eit
 
 
 ## Bugs
-- Nav bar not changong on account login/logout (still shows Register/Login after logging in)
+- Nav bar not changing on account login/logout (still shows Register/Login after logging in)
   but changes to correct options after refreshing the page (bug in state management, needs fixing)
 - Cycling/Swimming workouts not being logged
 
@@ -90,12 +107,13 @@ App uses SQLite by default (`sqlite:///flask_database.db`) On model changes, eit
 - Calendar view for workouts and meals (FullCalendar React component)
 - Email verification and password reset confirmation
 - More detailed workout logging (e.g. sets/reps for strength training)
-- Date of Birth for accurate and automatic age calculation
+
 
 
 ## Notes
 Authentication is minimal: the app stores user_id in localStorage. Can replace with JWT or sessions for production
 MET-based calorie estimates are basic. Can later add intensity, better MET mapping, or BMR adjustments for accuracy
-Use backticks ` for for JavaScript variables in React components to avoid confusion with Markdown formatting
+Use backticks ` for JavaScript variables in React components to avoid confusion with Markdown formatting
+Age is automatically calculated from date_of_birth, no need for manual age field updates
 
 
