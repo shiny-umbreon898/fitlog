@@ -11,7 +11,7 @@ class User(db.Model):
     password = db.Column(db.String(255), nullable=False)  # Store hashed passwords
     
     # Personal info
-    age = db.Column(db.Integer, nullable=True)
+    date_of_birth = db.Column(db.Date, nullable=True)  # Date of birth for automatic age calculation
     sex = db.Column(db.String(10), nullable=True) # M/F
     weight = db.Column(db.Float, nullable=True)  # Weight in kg
     height = db.Column(db.Float, nullable=True)  # Height in cm
@@ -19,6 +19,17 @@ class User(db.Model):
     # Password reset
     reset_token = db.Column(db.String(100), unique=True, nullable=True)
     token_expiry = db.Column(db.DateTime, nullable=True)
+    
+    def get_age(self):
+        """Calculate age from date of birth"""
+        if not self.date_of_birth:
+            return None
+        today = datetime.utcnow().date()
+        age = today.year - self.date_of_birth.year
+        # Adjust for birthday not yet occurred this year
+        if (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day):
+            age -= 1
+        return age
     
     def __repr__(self):
         return f"<User {self.username}>"

@@ -1,34 +1,41 @@
-import { useEffect, useState } from "react";
-import '../App.css'; // Import CSS from parent directory
+import { useCallback, useEffect, useMemo, useState } from "react";
+import "../App.css";
 
-// icons
-//import { FaRunning, FaBicycle, FaSwimmer, FaWalking, FaHiking, FaDumbbell, FaQuestion } from 'react-icons/fa';
-import { FaPersonRunning, FaBicycle, FaPersonSwimming, FaPersonWalking, FaPersonHiking, FaDumbbell, FaQuestion } from 'react-icons/fa6';
-
-//import { TbBike } from "react-icons/tb";
-import { GiLotus } from 'react-icons/gi';
+import { FaPersonRunning, FaBicycle, FaPersonSwimming, FaPersonWalking, FaPersonHiking, FaDumbbell, FaQuestion } from "react-icons/fa6";
+import { GiLotus } from "react-icons/gi";
 
 function Workouts() {
     const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
     const userId = localStorage.getItem("user_id");
 
-    // store workouts
     const [workouts, setWorkouts] = useState([]);
-
-    // store from user input for new workout
     const [form, setForm] = useState({
         name: "",
         duration: "",
-        user_id: userId
+        user_id: userId,
     });
 
     const [profile, setProfile] = useState(null);
     const [showProfileModal, setShowProfileModal] = useState(false);
-    const [profileForm, setProfileForm] = useState({ age: "", sex: "", weight: "", height: "" });
+    const [profileForm, setProfileForm] = useState({ date_of_birth: "", sex: "", weight: "", height: "" });
+    const [profileError, setProfileError] = useState("");
+    const [dailyBurnTarget, setDailyBurnTarget] = useState(500);
+    const [range, setRange] = useState("7d");
+    const [customStartDate, setCustomStartDate] = useState("");
+    const [customEndDate, setCustomEndDate] = useState("");
+    const [query, setQuery] = useState("");
+    const [sortBy, setSortBy] = useState("newest");
+    const [page, setPage] = useState(1);
+    const [editingWorkoutId, setEditingWorkoutId] = useState(null);
+    const [editForm, setEditForm] = useState({ name: "", duration: "" });
+    const [workoutStreak, setWorkoutStreak] = useState({
+        current_streak_days: 0,
+        longest_streak_days: 0,
+        active_today: false,
+        last_workout_date: null,
+    });
+    const pageSize = 6;
 
-    // activity icons map - maps workout types to react icons
-    // Icons are from react-icons/fa6 and react-icons/gi libraries
-    // Each icon represents a different fitness activity
     const ICONS = {
         running: <FaPersonRunning />,
         cycling: <FaBicycle />,
@@ -37,35 +44,23 @@ function Workouts() {
         hiking: <FaPersonHiking />,
         yoga: <GiLotus />,
         strength: <FaDumbbell />,
-        default: <FaQuestion />
-
+        default: <FaQuestion />,
     };
 
-    // fetch workouts on page load
-    useEffect(() => {
-        if (!userId) {
-            window.location.href = "/login";
-            return;
-        }
-        fetchProfileAndWorkouts();
-    }, []);
-
-    const fetchProfileAndWorkouts = async () => {
-        // fetch profile
+    const fetchProfileAndWorkouts = useCallback(async () => {
         try {
             const pRes = await fetch(`${API_URL}/api/users/${userId}`);
             if (pRes.ok) {
                 const pData = await pRes.json();
                 setProfile(pData);
                 setProfileForm({
-                    age: pData.age ?? "",
+                    date_of_birth: pData.date_of_birth || "",
                     sex: pData.sex ?? "",
                     weight: pData.weight ?? "",
-                    height: pData.height ?? ""
+                    height: pData.height ?? "",
                 });
 
-                // if profile incomplete, show modal to collect info
-                if (pData.age == null || pData.weight == null || pData.height == null || !pData.sex) {
+                if (!pData.date_of_birth || pData.weight == null || pData.height == null || !pData.sex) {
                     setShowProfileModal(true);
                 }
             } else {
@@ -75,7 +70,6 @@ function Workouts() {
             console.error(e);
         }
 
-        // fetch workouts for this user
         try {
             const res = await fetch(`${API_URL}/api/users/${userId}/workouts`);
             if (res.ok) {
@@ -87,9 +81,26 @@ function Workouts() {
         } catch (e) {
             console.error(e);
         }
-    };
 
-    // runs when user types in form fields and updates form state
+        try {
+            const streakRes = await fetch(`${API_URL}/api/users/${userId}/workouts/streak`);
+            if (streakRes.ok) {
+                const streakData = await streakRes.json();
+                setWorkoutStreak(streakData);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }, [API_URL, userId]);
+
+    useEffect(() => {
+        if (!userId) {
+            window.location.href = "/login";
+            return;
+        }
+        fetchProfileAndWorkouts();
+    }, [fetchProfileAndWorkouts, userId]);
+
     const handleChange = (e) => {
         setForm({
             ...form,
@@ -97,48 +108,55 @@ function Workouts() {
         });
     };
 
-    // profile modal change
     const handleProfileChange = (e) => {
         setProfileForm({ ...profileForm, [e.target.name]: e.target.value });
     };
 
-    // client-side validation helpers
     const validateProfile = (p) => {
-        const age = Number(p.age);
+        if (!p.date_of_birth) return "Date of birth is required";
+        
+        const today = new Date();
+        const birthDate = new Date(p.date_of_birth);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
+        if (age < 16) return "You must be at least 16 years old to use this app";
+        if (!p.sex) return "Sex is required";
+        if (!['male', 'female', 'm', 'f'].includes(p.sex.toLowerCase())) return "Sex must be Male or Female";
+        
         const weight = Number(p.weight);
         const height = Number(p.height);
-        const sex = (p.sex || "").toString().trim();
-
-        if (!sex) return "Sex is required";
-        if (!['male', 'female', 'm', 'f'].includes(sex.toLowerCase())) return "Sex must be Male or Female";
-        if (!Number.isFinite(age) || age < 5 || age > 120) return "Age must be between 5 and 120";
         if (!Number.isFinite(weight) || weight < 20 || weight > 500) return "Weight must be between 20kg and 500kg";
         if (!Number.isFinite(height) || height < 50 || height > 300) return "Height must be between 50cm and 300cm";
         return null;
-    }
+    };
 
-    // submit profile modal
     const submitProfile = async (e) => {
         e.preventDefault();
+        setProfileError("");
 
         const validationError = validateProfile(profileForm);
         if (validationError) {
-            alert(validationError);
+            setProfileError(validationError);
             return;
         }
 
         const payload = {
-            age: profileForm.age === "" ? null : Number(profileForm.age),
+            date_of_birth: profileForm.date_of_birth,
             sex: profileForm.sex || null,
             weight: profileForm.weight === "" ? null : Number(profileForm.weight),
-            height: profileForm.height === "" ? null : Number(profileForm.height)
+            height: profileForm.height === "" ? null : Number(profileForm.height),
         };
 
         try {
             const res = await fetch(`${API_URL}/api/users/${userId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
             });
             if (res.ok) {
                 const updated = await res.json();
@@ -146,28 +164,31 @@ function Workouts() {
                 setShowProfileModal(false);
             } else {
                 const err = await res.json();
-                alert(err.error || "Profile update failed");
+                setProfileError(err.error || "Profile update failed");
             }
         } catch (err) {
-            alert("Network error");
+            setProfileError("Network error");
         }
     };
 
-    // add new workout to backend
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // ensure profile exists and is complete
-        if (!profile || profile.age == null || profile.weight == null || profile.height == null || !profile.sex) {
+        if (!profile || !profile.date_of_birth || profile.weight == null || profile.height == null || !profile.sex) {
             setShowProfileModal(true);
             return;
         }
 
-        // validate workout inputs
         const name = (form.name || form.workout_type || "").toString().trim();
         const duration = Number(form.duration);
-        if (!name) { alert('Workout name required'); return; }
-        if (!Number.isFinite(duration) || duration <= 0 || duration > 1440) { alert('Duration must be 1-1440 minutes'); return; }
+        if (!name) {
+            alert("Workout name required");
+            return;
+        }
+        if (!Number.isFinite(duration) || duration <= 0 || duration > 1440) {
+            alert("Duration must be 1-1440 minutes");
+            return;
+        }
 
         const payload = { name, duration, user_id: Number(userId) };
 
@@ -190,27 +211,176 @@ function Workouts() {
         }
     };
 
-    // delete workout from backend
     const handleDelete = async (id) => {
+        if (!window.confirm("Delete this workout?")) return;
         await fetch(`${API_URL}/api/workouts/${id}`, { method: "DELETE" });
         fetchProfileAndWorkouts();
     };
 
-    // Maps workout name to appropriate icon
+    const startEdit = (workout) => {
+        setEditingWorkoutId(workout.id);
+        setEditForm({ name: workout.name, duration: String(workout.duration) });
+    };
+
+    const cancelEdit = () => {
+        setEditingWorkoutId(null);
+        setEditForm({ name: "", duration: "" });
+    };
+
+    const saveEdit = async (workoutId) => {
+        const payload = {
+            name: editForm.name.trim(),
+            duration: Number(editForm.duration),
+        };
+        if (!payload.name || !Number.isFinite(payload.duration) || payload.duration <= 0 || payload.duration > 1440) {
+            alert("Provide valid workout name and duration (1-1440)");
+            return;
+        }
+        const res = await fetch(`${API_URL}/api/workouts/${workoutId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+            alert("Failed to update workout");
+            return;
+        }
+        cancelEdit();
+        fetchProfileAndWorkouts();
+    };
+
+    const filteredWorkouts = useMemo(() => {
+        const isInRange = (timestamp) => {
+            if (range === "all") return true;
+            if (range === "custom") {
+                if (!customStartDate || !customEndDate) return true;
+                const start = new Date(`${customStartDate}T00:00:00`);
+                const end = new Date(`${customEndDate}T23:59:59`);
+                const current = new Date(timestamp);
+                return current >= start && current <= end;
+            }
+            const days = range === "30d" ? 30 : 7;
+            const cutoff = new Date();
+            cutoff.setHours(0, 0, 0, 0);
+            cutoff.setDate(cutoff.getDate() - (days - 1));
+            return new Date(timestamp) >= cutoff;
+        };
+        return workouts
+            .filter((workout) => isInRange(workout.timestamp))
+            .filter((workout) => workout.name.toLowerCase().includes(query.trim().toLowerCase()));
+    }, [workouts, range, query, customStartDate, customEndDate]);
+
+    const stats = useMemo(() => {
+        const totalSessions = filteredWorkouts.length;
+        const totalCalories = filteredWorkouts.reduce((sum, w) => sum + Number(w.calories || 0), 0);
+        const avgDuration = totalSessions
+            ? Math.round(filteredWorkouts.reduce((sum, w) => sum + Number(w.duration || 0), 0) / totalSessions)
+            : 0;
+        const topWorkout = filteredWorkouts.reduce((best, w) => {
+            if (!best || Number(w.calories || 0) > Number(best.calories || 0)) return w;
+            return best;
+        }, null);
+        return { totalSessions, totalCalories: Math.round(totalCalories), avgDuration, topWorkout };
+    }, [filteredWorkouts]);
+
+    const weeklyTrend = useMemo(() => {
+        const points = [];
+        for (let offset = 6; offset >= 0; offset -= 1) {
+            const day = new Date();
+            day.setHours(0, 0, 0, 0);
+            day.setDate(day.getDate() - offset);
+            const key = day.toISOString().slice(0, 10);
+            const calories = workouts.reduce((sum, w) => {
+                const workoutDate = new Date(w.timestamp).toISOString().slice(0, 10);
+                return sum + (workoutDate === key ? Number(w.calories || 0) : 0);
+            }, 0);
+            points.push({ label: day.toLocaleDateString(undefined, { weekday: "short" }), calories });
+        }
+        return points;
+    }, [workouts]);
+
+    const weeklyGoalStreak = useMemo(() => {
+        const results = [];
+        for (let offset = 6; offset >= 0; offset -= 1) {
+            const day = new Date();
+            day.setHours(0, 0, 0, 0);
+            day.setDate(day.getDate() - offset);
+            const key = day.toISOString().slice(0, 10);
+            const calories = workouts.reduce((sum, w) => {
+                const workoutDate = new Date(w.timestamp).toISOString().slice(0, 10);
+                return sum + (workoutDate === key ? Number(w.calories || 0) : 0);
+            }, 0);
+            results.push({ hit: calories >= Number(dailyBurnTarget || 0) });
+        }
+        const daysHit = results.filter((item) => item.hit).length;
+        let consecutive = 0;
+        for (let i = results.length - 1; i >= 0; i -= 1) {
+            if (results[i].hit) consecutive += 1;
+            else break;
+        }
+        return { daysHit, consecutive };
+    }, [workouts, dailyBurnTarget]);
+
+    const maxTrend = Math.max(1, ...weeklyTrend.map((point) => point.calories));
+
+    const sortedWorkouts = useMemo(() => {
+        const list = [...filteredWorkouts];
+        switch (sortBy) {
+            case "oldest":
+                list.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                break;
+            case "calories_high":
+                list.sort((a, b) => Number(b.calories || 0) - Number(a.calories || 0));
+                break;
+            case "duration_high":
+                list.sort((a, b) => Number(b.duration || 0) - Number(a.duration || 0));
+                break;
+            default:
+                list.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        }
+        return list;
+    }, [filteredWorkouts, sortBy]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [range, query, sortBy, customStartDate, customEndDate]);
+
+    const totalPages = Math.max(1, Math.ceil(sortedWorkouts.length / pageSize));
+    const paginatedWorkouts = useMemo(() => {
+        const start = (page - 1) * pageSize;
+        return sortedWorkouts.slice(start, start + pageSize);
+    }, [sortedWorkouts, page]);
+    const pageNumbers = useMemo(() => {
+        return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }, [totalPages]);
+
+    const exportWorkoutsCsv = () => {
+        const headers = ["Workout", "Duration (min)", "Calories", "Timestamp"];
+        const rows = sortedWorkouts.map((w) => [w.name, w.duration, w.calories, w.timestamp]);
+        const csv = [headers, ...rows]
+            .map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
+            .join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `workouts-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
     const iconFor = (name) => {
         if (!name) return ICONS.default;
         const key = name.toLowerCase();
-        
-        // Match specific keywords in workout name and return corresponding icon
-        if (key.includes('run')) return ICONS.running;
-        if (key.includes('cycle') || key.includes('bike')) return ICONS.cycling;
-        if (key.includes('swim')) return ICONS.swimming;
-        if (key.includes('walk')) return ICONS.walking;
-        if (key.includes('hike')) return ICONS.hiking;
-        if (key.includes('yoga')) return ICONS.yoga;
-        if (key.includes('lift') || key.includes('strength') || key.includes('weight')) return ICONS.strength;
-        
-        // If no match found, return question mark icon
+
+        if (key.includes("run")) return ICONS.running;
+        if (key.includes("cycle") || key.includes("bike")) return ICONS.cycling;
+        if (key.includes("swim")) return ICONS.swimming;
+        if (key.includes("walk")) return ICONS.walking;
+        if (key.includes("hike")) return ICONS.hiking;
+        if (key.includes("yoga")) return ICONS.yoga;
+        if (key.includes("lift") || key.includes("strength") || key.includes("weight")) return ICONS.strength;
+
         return ICONS.default;
     };
 
@@ -221,22 +391,43 @@ function Workouts() {
         } catch (e) {
             return iso;
         }
-    }
+    };
 
     return (
         <div className="workouts-wrapper">
-            <div className="workouts-container">
-                <h1>Workouts</h1>
+            <div className="workouts-container pro">
+                <div className="workouts-hero">
+                    <h1>Workout Performance</h1>
+                    <p>Log sessions, track burn trends, and stay consistent with your weekly burn streak.</p>
+                </div>
 
-                {/* Profile modal */}
+                <div className="workouts-stats-grid">
+                    <div className="workouts-stat-card"><span>Sessions ({range})</span><strong>{stats.totalSessions}</strong></div>
+                    <div className="workouts-stat-card"><span>Total calories</span><strong>{stats.totalCalories} kcal</strong></div>
+                    <div className="workouts-stat-card"><span>Avg duration</span><strong>{stats.avgDuration} min</strong></div>
+                    <div className="workouts-stat-card"><span>Top workout</span><strong>{stats.topWorkout ? `${stats.topWorkout.name} (${Math.round(stats.topWorkout.calories || 0)} kcal)` : "--"}</strong></div>
+                    <div className="workouts-stat-card">
+                        <span>Workout streak</span>
+                        <strong>{workoutStreak.current_streak_days} day{workoutStreak.current_streak_days === 1 ? "" : "s"}</strong>
+                        <span>Best: {workoutStreak.longest_streak_days} day{workoutStreak.longest_streak_days === 1 ? "" : "s"}</span>
+                    </div>
+                </div>
+
                 {showProfileModal && (
                     <div className="modal-overlay">
                         <div className="modal-content">
                             <h2>Complete Profile</h2>
                             <form onSubmit={submitProfile}>
                                 <div>
-                                    <label>Age</label>
-                                    <input name="age" type="number" value={profileForm.age} onChange={handleProfileChange} required min="5" max="120" />
+                                    <label>Date of Birth</label>
+                                    <input 
+                                        type="date" 
+                                        name="date_of_birth"
+                                        value={profileForm.date_of_birth} 
+                                        onChange={handleProfileChange} 
+                                        required 
+                                        max={new Date().toISOString().split('T')[0]}
+                                    />
                                 </div>
                                 <div>
                                     <label>Sex</label>
@@ -254,6 +445,7 @@ function Workouts() {
                                     <label>Height (cm)</label>
                                     <input name="height" type="number" step="0.1" value={profileForm.height} onChange={handleProfileChange} required min="50" max="300" />
                                 </div>
+                                {profileError && <p style={{ color: "#d32f2f" }}>{profileError}</p>}
                                 <button type="submit">Save</button>
                                 <button type="button" onClick={() => setShowProfileModal(false)}>Cancel</button>
                             </form>
@@ -261,7 +453,7 @@ function Workouts() {
                     </div>
                 )}
 
-                <div className="workout-form">
+                <div className="workout-form pro">
                     <form onSubmit={handleSubmit}>
                         <input
                             type="text"
@@ -292,19 +484,126 @@ function Workouts() {
                     </form>
                 </div>
 
-                <h2>Recent Workouts</h2>
-                <ul className="workout-list">
-                    {workouts.map((workout) => (
+                <div className="meals-controls">
+                    <input
+                        type="text"
+                        placeholder="Search workouts..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                    />
+                    <div className="range-buttons">
+                        <button type="button" className={range === "7d" ? "active" : ""} onClick={() => setRange("7d")}>7 days</button>
+                        <button type="button" className={range === "30d" ? "active" : ""} onClick={() => setRange("30d")}>30 days</button>
+                        <button type="button" className={range === "custom" ? "active" : ""} onClick={() => setRange("custom")}>Custom</button>
+                        <button type="button" className={range === "all" ? "active" : ""} onClick={() => setRange("all")}>All</button>
+                    </div>
+                </div>
+                {range === "custom" && (
+                    <div className="custom-range-row">
+                        <label>
+                            Start
+                            <input type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} />
+                        </label>
+                        <label>
+                            End
+                            <input type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} />
+                        </label>
+                    </div>
+                )}
+
+                <div className="meals-analytics-grid">
+                    <div className="analytics-card">
+                        <h3>7-Day Burn Trend</h3>
+                        <div className="trend-bars">
+                            {weeklyTrend.map((point) => (
+                                <div key={point.label} className="trend-bar-item">
+                                    <div className="trend-bar-track">
+                                        <div className="trend-bar-fill workout" style={{ height: `${Math.round((point.calories / maxTrend) * 100)}%` }} />
+                                    </div>
+                                    <div className="trend-bar-label">{point.label}</div>
+                                    <div className="trend-bar-value">{Math.round(point.calories)}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="analytics-card">
+                        <h3>Burn Goal Streak</h3>
+                        <div className="workout-goal-card">
+                            <p>Target per day</p>
+                            <input type="number" min="100" value={dailyBurnTarget} onChange={(e) => setDailyBurnTarget(Number(e.target.value) || 0)} />
+                            <p>{weeklyGoalStreak.daysHit}/7 days hit target</p>
+                            <p>{weeklyGoalStreak.consecutive} day current run</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>Workout Timeline</h2>
+                <div className="timeline-toolbar">
+                    <label>
+                        Sort by
+                        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                            <option value="newest">Newest</option>
+                            <option value="oldest">Oldest</option>
+                            <option value="calories_high">Highest calories</option>
+                            <option value="duration_high">Longest duration</option>
+                        </select>
+                    </label>
+                    <span className="timeline-count">
+                        Showing {sortedWorkouts.length === 0 ? 0 : (page - 1) * pageSize + 1}-
+                        {Math.min(page * pageSize, sortedWorkouts.length)} of {sortedWorkouts.length}
+                    </span>
+                    <button type="button" className="export-btn" onClick={exportWorkoutsCsv}>Export CSV</button>
+                </div>
+
+                <ul className="workout-list pro">
+                    {paginatedWorkouts.map((workout) => (
                         <li key={workout.id} className="workout-item">
-                            <span className="workout-icon">{iconFor(workout.name)}</span>
-                            <div className="workout-info">
-                                <div className="workout-name">{workout.name} - {workout.duration} mins</div>
-                                <div className="workout-meta">{workout.calories ? `${workout.calories} kcal,` : ''} {workout.timestamp ? `${fmt(workout.timestamp)}` : ''}</div>
-                            </div>
-                            <button className="workout-delete-btn" onClick={() => handleDelete(workout.id)}>Delete</button>
+                            {editingWorkoutId === workout.id ? (
+                                <div className="meal-edit-row">
+                                    <input type="text" value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+                                    <input type="number" value={editForm.duration} onChange={(e) => setEditForm((f) => ({ ...f, duration: e.target.value }))} />
+                                    <div />
+                                    <button type="button" onClick={() => saveEdit(workout.id)}>Save</button>
+                                    <button type="button" onClick={cancelEdit}>Cancel</button>
+                                </div>
+                            ) : (
+                                <>
+                                    <span className="workout-icon">{iconFor(workout.name)}</span>
+                                    <div className="workout-info">
+                                        <div className="workout-name">{workout.name} - {workout.duration} mins</div>
+                                        <div className="workout-meta">{workout.calories ? `${workout.calories} kcal,` : ""} {workout.timestamp ? `${fmt(workout.timestamp)}` : ""}</div>
+                                    </div>
+                                    <div className="meal-row-actions">
+                                        <button className="workout-delete-btn" type="button" onClick={() => startEdit(workout)}>Edit</button>
+                                        <button className="meal-row-btn danger" type="button" onClick={() => handleDelete(workout.id)}>Delete</button>
+                                    </div>
+                                </>
+                            )}
                         </li>
                     ))}
+                    {sortedWorkouts.length === 0 && <li className="meal-empty-state">No workouts found for this filter.</li>}
                 </ul>
+                {sortedWorkouts.length > 0 && (
+                    <div className="timeline-pagination">
+                        <button type="button" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</button>
+                        <span>Page {page} / {totalPages}</span>
+                        <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</button>
+                    </div>
+                )}
+                {totalPages > 1 && (
+                    <div className="page-numbers-row">
+                        {pageNumbers.map((pageNo) => (
+                            <button
+                                key={pageNo}
+                                type="button"
+                                className={`page-number-btn ${pageNo === page ? "active" : ""}`}
+                                onClick={() => setPage(pageNo)}
+                            >
+                                {pageNo}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

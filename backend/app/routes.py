@@ -64,9 +64,63 @@ def estimate_calories(met, weight_kg, duration_minutes):
         return 0.0
 
 
+def calculate_age_from_dob(date_of_birth):
+    """
+    Calculate age from date of birth.
+    Returns None if date_of_birth is None.
+    """
+    if not date_of_birth:
+        return None
+    today = datetime.utcnow().date()
+    age = today.year - date_of_birth.year
+    # Adjust for birthday not yet occurred this year
+    if (today.month, today.day) < (date_of_birth.month, date_of_birth.day):
+        age -= 1
+    return age
+
+
+def _calculate_workout_streak(workouts):
+    """Calculate current and longest workout-day streaks from workouts."""
+    if not workouts:
+        return {
+            "current_streak_days": 0,
+            "longest_streak_days": 0,
+            "active_today": False,
+            "last_workout_date": None,
+        }
+
+    workout_dates = sorted({w.timestamp.date() for w in workouts})
+    workout_date_set = set(workout_dates)
+    today = datetime.utcnow().date()
+
+    current_streak = 0
+    cursor = today
+    while cursor in workout_date_set:
+        current_streak += 1
+        cursor -= timedelta(days=1)
+
+    longest_streak = 0
+    run = 0
+    prev = None
+    for day in workout_dates:
+        if prev and day == prev + timedelta(days=1):
+            run += 1
+        else:
+            run = 1
+        longest_streak = max(longest_streak, run)
+        prev = day
+
+    return {
+        "current_streak_days": current_streak,
+        "longest_streak_days": longest_streak,
+        "active_today": today in workout_date_set,
+        "last_workout_date": workout_dates[-1].isoformat(),
+    }
+
+
 # USER AUTHENTICATION ROUTES
 
-@api_bp.route("/", methods=["GET"])
+@api_bp.route("/", methods=["GET"]) 
 def index():
     return jsonify({"message": "Welcome to FITLOG API"})
 
@@ -77,8 +131,17 @@ def hello():
 @api_bp.route("/users", methods=["POST"])
 def create_user():
     data = request.get_json()
-    if not data or not all(k in data for k in ("username", "email", "password")):
-        return jsonify({"error": "username, email and password required"}), 400
+    if not data or not all(k in data for k in ("username", "email", "password", "date_of_birth")):
+        return jsonify({"error": "username, email, password, and date_of_birth required"}), 400
+
+    # Validate age (must be 16 or older)
+    try:
+        dob = datetime.strptime(data["date_of_birth"], "%Y-%m-%d").date()
+        age = calculate_age_from_dob(dob)
+        if age is None or age < 16:
+            return jsonify({"error": "You must be at least 16 years old to use this app"}), 400
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
 
     if User.query.filter_by(username=data["username"]).first():
         return jsonify({"error": "username already exists"}), 409
@@ -86,7 +149,12 @@ def create_user():
         return jsonify({"error": "email already exists"}), 409
 
     hashed_password = bcrypt.hashpw(data["password"].encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-    user = User(username=data["username"], email=data["email"], password=hashed_password)
+    user = User(
+        username=data["username"], 
+        email=data["email"], 
+        password=hashed_password,
+        date_of_birth=dob
+    )
 
     db.session.add(user)
     try:
@@ -112,15 +180,24 @@ def login():
 
 # USER PROFILE ROUTES
 
-@api_bp.route("/users/<int:user_id>", methods=["PUT"])
+@api_bp.route("/users/<int:user_id>", methods=["PUT"]) 
 def update_user(user_id):
     data = request.get_json()
     user = User.query.get(user_id)
     if not user:
         return jsonify({"error": "user not found"}), 404
 
-    if "age" in data:
-        user.age = data["age"]
+    # Handle date_of_birth update
+    if "date_of_birth" in data and data["date_of_birth"]:
+        try:
+            dob = datetime.strptime(data["date_of_birth"], "%Y-%m-%d").date()
+            age = calculate_age_from_dob(dob)
+            if age is None or age < 16:
+                return jsonify({"error": "You must be at least 16 years old to use this app"}), 400
+            user.date_of_birth = dob
+        except ValueError:
+            return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
+    
     if "sex" in data:
         user.sex = data["sex"]
     if "weight" in data:
@@ -131,7 +208,7 @@ def update_user(user_id):
     db.session.commit()
     return jsonify({"message": "profile updated"}), 200
 
-@api_bp.route("/users/<int:user_id>", methods=["GET"])
+@api_bp.route("/users/<int:user_id>", methods=["GET"]) 
 def get_user(user_id):
     user = User.query.get(user_id)
     if not user:
@@ -141,13 +218,14 @@ def get_user(user_id):
         "id": user.id,
         "username": user.username,
         "email" : user.email,
-        "age": user.age,
+        "age": user.get_age(),
+        "date_of_birth": user.date_of_birth.isoformat() if user.date_of_birth else None,
         "sex": user.sex,
         "weight": user.weight,
         "height": user.height
     }), 200
 
-@api_bp.route("/users/<int:user_id>", methods=["DELETE"])
+@api_bp.route("/users/<int:user_id>", methods=["DELETE"]) 
 def delete_user(user_id):
     user = User.query.get(user_id)
     if not user: return jsonify({"error": "user not found"}), 404
@@ -187,20 +265,196 @@ def get_workouts(user_id):
     return jsonify([{"id": w.id, "name": w.name, "duration": w.duration, "calories": w.calories, "timestamp": w.timestamp.isoformat()} for w in workouts]), 200
 
 
+@api_bp.route("/users/<int:user_id>/workouts/streak", methods=["GET"])
+def get_workout_streak(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "user not found"}), 404
+
+    workouts = Workout.query.filter_by(user_id=user_id).all()
+    streak = _calculate_workout_streak(workouts)
+    return jsonify(streak), 200
+
+@api_bp.route("/workouts/<int:workout_id>", methods=["PUT"])
+def update_workout(workout_id):
+    data = request.get_json() or {}
+    workout = Workout.query.get(workout_id)
+    if not workout:
+        return jsonify({"error": "workout not found"}), 404
+
+    name = str(data.get("name", workout.name)).strip()
+    if not name:
+        return jsonify({"error": "workout name required"}), 400
+
+    try:
+        duration = int(data.get("duration", workout.duration))
+    except Exception:
+        return jsonify({"error": "invalid duration"}), 400
+
+    if duration <= 0 or duration > 1440:
+        return jsonify({"error": "duration must be 1-1440 minutes"}), 400
+
+    user = User.query.get(workout.user_id)
+    if not user:
+        return jsonify({"error": "user not found"}), 404
+
+    met = MET_VALUES.get(name.lower(), 6.0)
+    calories = estimate_calories(met, user.weight, duration)
+
+    workout.name = name
+    workout.duration = duration
+    workout.calories = round(calories, 1)
+    db.session.commit()
+
+    return jsonify({"message": "workout updated", "calories": workout.calories}), 200
+
+@api_bp.route("/workouts/<int:workout_id>", methods=["DELETE"])
+def delete_workout(workout_id):
+    workout = Workout.query.get(workout_id)
+    if not workout:
+        return jsonify({"error": "workout not found"}), 404
+
+    db.session.delete(workout)
+    db.session.commit()
+    return jsonify({"message": "workout deleted"}), 200
+
+
 # MEAL ROUTES
 
 @api_bp.route("/meals", methods=["POST"])
 def create_meal():
     data = request.get_json()
-    meal = Meal(name=data["name"], calories=data["calories"], user_id=data["user_id"], timestamp=datetime.utcnow())
+    meal = Meal(
+        name=data["name"],
+        calories=data["calories"],
+        description=data.get("description"),
+        user_id=data["user_id"],
+        timestamp=datetime.utcnow()
+    )
     db.session.add(meal)
     db.session.commit()
-    return jsonify({"message": "meal created"}), 201
+    return jsonify({"message": "meal created", "id": meal.id}), 201
 
 @api_bp.route("/users/<int:user_id>/meals", methods=["GET"])
 def get_meals(user_id):
     meals = Meal.query.filter_by(user_id=user_id).order_by(Meal.timestamp.desc()).all()
-    return jsonify([{"id": m.id, "name": m.name, "calories": m.calories, "timestamp": m.timestamp.isoformat()} for m in meals]), 200
+    return jsonify([
+        {
+            "id": m.id,
+            "name": m.name,
+            "description": m.description,
+            "calories": m.calories,
+            "timestamp": m.timestamp.isoformat()
+        } for m in meals
+    ]), 200
+
+@api_bp.route("/meals/<int:meal_id>", methods=["PUT"])
+def update_meal(meal_id):
+    data = request.get_json() or {}
+    meal = Meal.query.get(meal_id)
+    if not meal:
+        return jsonify({"error": "meal not found"}), 404
+
+    if "name" in data and str(data["name"]).strip():
+        meal.name = data["name"].strip()
+    if "calories" in data:
+        try:
+            calories = int(data["calories"])
+            if calories <= 0:
+                return jsonify({"error": "calories must be greater than 0"}), 400
+            meal.calories = calories
+        except Exception:
+            return jsonify({"error": "invalid calories"}), 400
+    if "description" in data:
+        meal.description = data["description"]
+
+    db.session.commit()
+    return jsonify({"message": "meal updated"}), 200
+
+@api_bp.route("/meals/<int:meal_id>", methods=["DELETE"])
+def delete_meal(meal_id):
+    meal = Meal.query.get(meal_id)
+    if not meal:
+        return jsonify({"error": "meal not found"}), 404
+
+    db.session.delete(meal)
+    db.session.commit()
+    return jsonify({"message": "meal deleted"}), 200
+
+
+# SUMMARY ROUTE (Daily / Weekly) - used by frontend Dashboard
+@api_bp.route('/users/<int:user_id>/summary', methods=['GET'])
+def user_summary(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "user not found"}), 404
+
+    period = request.args.get('period', 'daily')
+    now = datetime.utcnow()
+
+    if period == 'daily':
+        # start of today (UTC)
+        start = datetime(now.year, now.month, now.day)
+        end = start + timedelta(days=1)
+
+        workouts = Workout.query.filter(Workout.user_id==user_id, Workout.timestamp>=start, Workout.timestamp<end).all()
+        meals = Meal.query.filter(Meal.user_id==user_id, Meal.timestamp>=start, Meal.timestamp<end).all()
+
+        workouts_count = len(workouts)
+        total_workout_calories = sum((w.calories or 0) for w in workouts)
+        meals_count = len(meals)
+        total_meal_calories = sum((m.calories or 0) for m in meals)
+
+        # hourly breakdown for 24 hours (0-23)
+        hourly = []
+        for hour in range(24):
+            h_start = start + timedelta(hours=hour)
+            h_end = h_start + timedelta(hours=1)
+            w_sum = sum((w.calories or 0) for w in workouts if h_start <= w.timestamp < h_end)
+            m_sum = sum((m.calories or 0) for m in meals if h_start <= m.timestamp < h_end)
+            hourly.append({"hour": hour, "workout_calories": round(w_sum, 1), "meal_calories": int(m_sum)})
+
+        return jsonify({
+            "period": "daily",
+            "date": start.strftime('%Y-%m-%d'),
+            "workouts_count": workouts_count,
+            "total_workout_calories": round(total_workout_calories, 1),
+            "meals_count": meals_count,
+            "total_meal_calories": int(total_meal_calories),
+            "hourly_breakdown": hourly
+        }), 200
+
+    elif period == 'weekly':
+        # 7-day window ending today (inclusive)
+        end = datetime(now.year, now.month, now.day) + timedelta(days=1)
+        start = end - timedelta(days=7)
+
+        workouts = Workout.query.filter(Workout.user_id==user_id, Workout.timestamp>=start, Workout.timestamp<end).all()
+        meals = Meal.query.filter(Meal.user_id==user_id, Meal.timestamp>=start, Meal.timestamp<end).all()
+
+        total_workout_calories = sum((w.calories or 0) for w in workouts)
+        total_meal_calories = sum((m.calories or 0) for m in meals)
+
+        # daily breakdown for each day in window
+        day_breakdown = []
+        for d in range(7):
+            day_start = start + timedelta(days=d)
+            day_end = day_start + timedelta(days=1)
+            w_sum = sum((w.calories or 0) for w in workouts if day_start <= w.timestamp < day_end)
+            m_sum = sum((m.calories or 0) for m in meals if day_start <= m.timestamp < day_end)
+            day_breakdown.append({"date": day_start.strftime('%Y-%m-%d'), "workout_calories": round(w_sum, 1), "meal_calories": int(m_sum)})
+
+        return jsonify({
+            "period": "weekly",
+            "start_date": start.strftime('%Y-%m-%d'),
+            "end_date": (end - timedelta(days=1)).strftime('%Y-%m-%d'),
+            "total_workout_calories": round(total_workout_calories, 1),
+            "total_meal_calories": int(total_meal_calories),
+            "day_breakdown": day_breakdown
+        }), 200
+
+    else:
+        return jsonify({"error": "invalid period"}), 400
 
 
 # PASSWORD RESET ROUTES

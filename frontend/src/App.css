@@ -432,6 +432,64 @@ datalist option {
   background-color: #d0e2ff;
 }
 
+.workouts-container.pro {
+  max-width: 1080px;
+}
+
+.workouts-hero {
+  padding: 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1f6feb, #3b82f6);
+  color: white;
+  margin-bottom: 16px;
+}
+
+.workouts-hero h1,
+.workouts-hero p {
+  color: white;
+  margin: 0;
+}
+
+.workouts-hero p {
+  margin-top: 8px;
+  opacity: 0.95;
+}
+
+.workouts-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.workouts-stat-card {
+  border: 1px solid #eef6ff;
+  border-radius: 12px;
+  padding: 14px;
+  text-align: left;
+  background-color: #fff;
+}
+
+.workouts-stat-card span {
+  display: block;
+  color: #666;
+  font-size: 12px;
+}
+
+.workouts-stat-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 18px;
+}
+
+.workout-form.pro {
+  border: 1px solid #eef6ff;
+}
+
+.workout-list.pro .workout-item {
+  justify-content: space-between;
+}
+
 /* PROFILE */
 
 .profile-wrapper {

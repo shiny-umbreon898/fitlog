@@ -14,13 +14,25 @@ function Register() {
         email: "",
         password: "",
         confirm_password: "",
+        date_of_birth: "",
     });
-
-    // password validation pattern: at least 8 characters, one uppercase, one lowercase, and one number
-    // password confirmation validation: confirm_password must match password
 
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
+
+    // Calculate age from date of birth for client-side validation
+    const calculateAge = (dateString) => {
+        if (!dateString) return null;
+        const today = new Date();
+        const birthDate = new Date(dateString);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age;
+    };
 
     // runs when user types in form fields and updates form state
     const handleChange = (e) => {
@@ -39,6 +51,19 @@ function Register() {
 
         // client-side validation
         setError("");
+
+        // validate date of birth is provided
+        if (!form.date_of_birth) {
+            setError("Date of birth is required");
+            return;
+        }
+
+        // validate age is 16 or older
+        const age = calculateAge(form.date_of_birth);
+        if (age === null || age < 16) {
+            setError("You must be at least 16 years old to use this app");
+            return;
+        }
 
         // validate password match
         if (form.password !== form.confirm_password) {
@@ -60,6 +85,7 @@ function Register() {
                     username: form.username,
                     email: form.email,
                     password: form.password,
+                    date_of_birth: form.date_of_birth,
                 }),
             });
 
@@ -74,72 +100,86 @@ function Register() {
                 navigate("/login");
 
             } else {
-                setError(data.message || "Registration failed");
+                setError(data.error || data.message || "Registration failed");
             }
         } catch (err) {
             setError("An error occurred. Please try again.");
-
+            console.error(err);
         }
     
     };
 
     return (
-        <div>
-            <h1>Register</h1>
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    name="username"
-                    placeholder="Username"
-                    value={form.username}
-                    onChange={handleChange}
-                    required
-                />
-                <input
-                    type="email"
-                    name="email"
-                    placeholder="Email"
-                    value={form.email}
-                    onChange={handleChange}
-                    required
-                />
-                <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    placeholder="Password"
-                    value={form.password}
-                    onChange={handleChange}
+        <div className="auth-wrapper">
+            <div className="auth-container">
+                <h1>Register</h1>
+                <p style={{color: "#666", fontSize: "14px", marginTop: "-10px"}}>
+                    Join Fitlog and start tracking your fitness journey. You must be at least 16 years old.
+                </p>
+                <form onSubmit={handleSubmit}>
+                    <input
+                        type="text"
+                        name="username"
+                        placeholder="Username"
+                        value={form.username}
+                        onChange={handleChange}
+                        required
+                    />
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="Email"
+                        value={form.email}
+                        onChange={handleChange}
+                        required
+                    />
+                    <input
+                        type="date"
+                        name="date_of_birth"
+                        placeholder="Date of Birth"
+                        value={form.date_of_birth}
+                        onChange={handleChange}
+                        required
+                        max={new Date().toISOString().split('T')[0]}
+                    />
+                    <input
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        placeholder="Password"
+                        value={form.password}
+                        onChange={handleChange}
 
-                    pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-                    title="Must be 8 or more characters long and contain at least one uppercase and lowercase letter and a number"
-                    required
-                />
+                        pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+                        title="Must be 8 or more characters long and contain at least one uppercase and lowercase letter and a number"
+                        required
+                    />
 
-                <input
-                    type={showPassword ? "text" : "password"}
-                    name="confirm_password"
-                    placeholder="Confirm Password"
-                    value={form.confirm_password}
-                    onChange={handleChange}
+                    <input
+                        type={showPassword ? "text" : "password"}
+                        name="confirm_password"
+                        placeholder="Confirm Password"
+                        value={form.confirm_password}
+                        onChange={handleChange}
 
-                    pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-                    title="Must be 8 or more characters long and contain at least one uppercase and lowercase letter and a number"
-                    required
-                />
+                        pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+                        title="Must be 8 or more characters long and contain at least one uppercase and lowercase letter and a number"
+                        required
+                    />
 
-                {/*toggle password visibility*/}
-                <div>
-                    <label>
+                    {/*toggle password visibility*/}
+                    <div className="password-toggle">
                         <input
                             type="checkbox"
+                            id="show-password"
                             onChange={() => setShowPassword(!showPassword)}
                         />
-                    </label>
-                </div>
+                        <label htmlFor="show-password">Show Password</label>
+                    </div>
 
-                {error && <p style={{ color: "red" }}>{error}</p>}
-                <button type="submit">Register</button>
-            </form>
+                    {error && <p className="auth-error">{error}</p>}
+                    <button type="submit">Register</button>
+                </form>
+            </div>
         </div>
     );
 
