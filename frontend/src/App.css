@@ -967,3 +967,50 @@ datalist option {
     border-radius: 8px;
     cursor: pointer;
 }
+/* Blue Theme Button (Matches Screenshot) */
+.delete-account-btn-styled, .confirm-delete-btn-blue {
+    background-color: #0066ff; /* Vibrant blue from screenshot */
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    width: 100%;
+    font-size: 16px;
+}
+
+.delete-account-btn-styled:hover, .confirm-delete-btn-blue:hover {
+    background-color: #0052cc;
+}
+
+.password-input-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.confirm-password-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.show-password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #666;
+}
+
+.auth-error-delete {
+    color: #ff4d4d;
+    font-size: 14px;
+    margin-bottom: 15px;
+    text-align: center;
+}

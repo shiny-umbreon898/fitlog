@@ -1,19 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Scale, Ruler, Calendar, Activity, X, Trash2 } from 'lucide-react';
+import { Scale, Ruler, Calendar, Activity, X, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import '../App.css'; 
 
 function Profile() {
-    // 1. STATE MANAGEMENT
-    const [user, setUser] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false); // For Editing
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // For Deleting
-    const [deletePassword, setDeletePassword] = useState('');
-    const [deleteError, setDeleteError] = useState('');
-    const [formData, setFormData] = useState({ age: '', sex: '', weight: '', height: '' });
-    
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
     const userId = localStorage.getItem("user_id");
+    const navigate = useNavigate();
+    
+    // State Management
+    const [user, setUser] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [confirmPassword, setConfirmPassword] = useState(""); 
+    const [showPassword, setShowPassword] = useState(false); 
+    const [formData, setFormData] = useState({ date_of_birth: '', sex: '', weight: '', height: '' });
+    const [error, setError] = useState("");
 
-    // 2. FETCH USER DATA ON LOAD
+    // Fetch User Data
     useEffect(() => {
         if (userId) {
             fetch(`${API_URL}/api/users/${userId}`)
@@ -21,21 +25,21 @@ function Profile() {
                 .then(data => {
                     setUser(data);
                     setFormData({ 
-                        age: data.age || '', 
+                        date_of_birth: data.date_of_birth || '', 
                         sex: data.sex || '', 
                         weight: data.weight || '', 
                         height: data.height || '' 
                     });
-                });
+                })
+                .catch(err => console.error("Failed to load profile", err));
         }
     }, [userId, API_URL]);
 
-    // 3. UPDATE PROFILE LOGIC
+    // Handle Profile Updates
     const handleUpdate = async (e) => {
         e.preventDefault();
         setError("");
 
-        // Validate date_of_birth if provided
         if (formData.date_of_birth) {
             const today = new Date();
             const birthDate = new Date(formData.date_of_birth);
@@ -59,7 +63,8 @@ function Profile() {
         });
 
         if (res.ok) {
-            setUser({ ...user, ...formData });
+            const updatedData = await res.json();
+            setUser({...user, ...formData});
             setIsModalOpen(false);
         } else {
             const errorData = await res.json();
@@ -67,24 +72,32 @@ function Profile() {
         }
     };
 
-    // 4. DELETE ACCOUNT LOGIC
+    // Secured Delete Account Logic
     const handleDeleteAccount = async (e) => {
         e.preventDefault();
-        setDeleteError(''); // Clear previous errors
-        
-        const res = await fetch(`http://localhost:5000/api/users/${userId}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password: deletePassword })
-        });
+        setError("");
 
-        const data = await res.json();
+        if (!confirmPassword) {
+            setError("Please enter your password to confirm deletion.");
+            return;
+        }
 
-        if (res.ok) {
-            localStorage.clear();
-            window.location.href = '/login'; 
-        } else {
-            setDeleteError(data.error || "Deletion failed. Check password.");
+        try {
+            const res = await fetch(`${API_URL}/api/users/${userId}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: confirmPassword }) 
+            });
+            
+            if (res.ok) {
+                localStorage.clear();
+                navigate('/register');
+            } else {
+                const data = await res.json();
+                setError(data.error || "Incorrect password. Deletion failed.");
+            }
+        } catch (err) {
+            setError("Server error during deletion.");
         }
     };
 
@@ -93,17 +106,16 @@ function Profile() {
     return (
         <div className="profile-container">
             <div className="profile-card">
+                {/* Header Section */}
                 <div className="profile-header">
                     <div className="profile-title">
                         <h1>My Profile</h1>
                         <p>{user.username} • {user.email}</p>
                     </div>
-                    <div className="header-actions">
-                        <button className="edit-btn" onClick={() => setIsModalOpen(true)}>Edit Profile</button>
-                    </div>
+                    <button className="edit-btn" onClick={() => setIsModalOpen(true)}>Edit Profile</button>
                 </div>
 
-                {/* STATS DISPLAY */}
+                {/* Scannable Stats Grid */}
                 <div className="stats-grid">
                     <div className="stat-box stat-age">
                         <div className="icon-wrapper"><Calendar size={24} /></div>
@@ -135,13 +147,22 @@ function Profile() {
                     </div>
                 </div>
 
-                {/* DELETE TRIGGER */}
-                <button className="delete-account-btn" onClick={() => setIsDeleteModalOpen(true)}>
-                    <Trash2 size={16} style={{marginRight: '8px'}} /> Delete Account
-                </button>
+                {/* Danger Zone */}
+                <div className="danger-zone" style={{marginTop: '30px', borderTop: '1px solid #eee', paddingTop: '20px'}}>
+                    <button 
+                        className="delete-account-btn-styled" 
+                        onClick={() => {
+                            setIsDeleteModalOpen(true);
+                            setError("");
+                            setConfirmPassword("");
+                        }}
+                    >
+                        Delete Account
+                    </button>
+                </div>
             </div>
 
-            {/* --- MODAL 1: EDIT PROFILE --- */}
+            {/* Edit Profile Modal */}
             {isModalOpen && (
                 <div className="modal-overlay">
                     <div className="modal-content">
@@ -152,7 +173,6 @@ function Profile() {
                         <form onSubmit={handleUpdate} className="modal-form">
                             <input 
                                 type="date" 
-                                placeholder="Date of Birth" 
                                 value={formData.date_of_birth} 
                                 onChange={(e)=>setFormData({...formData, date_of_birth: e.target.value})}
                                 max={new Date().toISOString().split('T')[0]}
@@ -176,34 +196,47 @@ function Profile() {
                                 value={formData.height} 
                                 onChange={(e)=>setFormData({...formData, height: e.target.value})}
                             />
-                            {error && <p className="auth-error" style={{margin: 0}}>{error}</p>}
+                            {error && <p className="auth-error" style={{color: 'red'}}>{error}</p>}
                             <button type="submit" className="edit-btn">Save Changes</button>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* --- MODAL 2: DELETE CONFIRMATION --- */}
+            {/* Password-Verified Delete Confirmation Modal */}
             {isDeleteModalOpen && (
                 <div className="modal-overlay">
-                    <div className="modal-content">
-                        <div className="profile-header">
-                            <h2 style={{margin:0, color: '#dc2626'}}>Delete Account</h2>
-                            <X onClick={() => setIsDeleteModalOpen(false)} style={{cursor:'pointer'}}/>
+                    <div className="modal-content delete-modal">
+                        <div className="modal-header-danger" style={{textAlign: 'center', marginBottom: '15px'}}>
+                            <AlertTriangle color="#ff4d4d" size={40} />
+                            <h2>Verify Identity</h2>
                         </div>
-                        <p style={{marginTop: '15px', color: '#6b7280'}}>This action is permanent. Please enter your password to confirm.</p>
+                        <p style={{textAlign: 'center', marginBottom: '20px'}}>This action is permanent. Please enter your password to confirm deletion.</p>
+                        
                         <form onSubmit={handleDeleteAccount} className="modal-form">
-                            <input 
-                                type="password" 
-                                placeholder="Verify Password" 
-                                value={deletePassword} 
-                                onChange={(e) => setDeletePassword(e.target.value)}
-                                required
-                            />
-                            {deleteError && <p className="error-msg">{deleteError}</p>}
-                            <div style={{display: 'flex', gap: '10px', marginTop: '10px'}}>
-                                <button type="button" className="cancel-btn" onClick={() => setIsDeleteModalOpen(false)}>Cancel</button>
-                                <button type="submit" className="confirm-delete-btn">Confirm Delete</button>
+                            <div className="password-input-wrapper" style={{position: 'relative', width: '100%'}}>
+                                <input 
+                                    type={showPassword ? "text" : "password"} 
+                                    placeholder="Enter your password" 
+                                    value={confirmPassword} 
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    className="confirm-password-input"
+                                    style={{width: '100%', padding: '12px', marginBottom: '10px'}}
+                                />
+                                <div 
+                                    className="show-password-toggle" 
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    style={{position: 'absolute', right: '10px', top: '12px', cursor: 'pointer'}}
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </div>
+                            </div>
+                            
+                            {error && <p className="auth-error" style={{color: 'red', textAlign: 'center'}}>{error}</p>}
+                            
+                            <div className="modal-actions" style={{display: 'flex', gap: '10px', marginTop: '10px'}}>
+                                <button type="button" className="cancel-btn" onClick={() => setIsDeleteModalOpen(false)} style={{flex: 1, padding: '10px'}}>Cancel</button>
+                                <button type="submit" className="confirm-delete-btn-blue" style={{flex: 1, padding: '10px', backgroundColor: '#0066ff', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold'}}>Confirm Delete</button>
                             </div>
                         </form>
                     </div>
