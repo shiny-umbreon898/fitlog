@@ -523,7 +523,7 @@ def delete_user_account(user_id):
         return jsonify({'error': str(e)}), 500
     
 @api_bp.route('/users/<int:user_id>/summary', methods=['GET'])
-def user_summary(user_id):
+def get_user_summary(user_id):
     print(">>> SUMMARY ROUTE HIT! <<<")
 
     user = User.query.get(user_id)
