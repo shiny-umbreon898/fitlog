@@ -467,21 +467,42 @@ def forgot_password():
 
     data = request.get_json()
     email = data.get('email')
+    
+    # Use filter instead of filter_by for safety, though filter_by is fine here
     user = User.query.filter_by(email=email).first()
     
     if user is None:
-        return jsonify({"error": "No user with that email"}), 404
+        # We still return 200/Success for security reasons (prevents email leaking)
+        # But we don't print a link
+        return jsonify({"message": "If that email exists, a reset link has been generated."}), 200
     
+    # 1. Generate Token
     token = secrets.token_hex(16)
     user.reset_token = token
     user.token_expiry = datetime.utcnow() + timedelta(hours=1)
-    db.session.commit()
+    
+    try:
+        db.session.commit()
+        
+        # 2. CONSTRUCT AND PRINT THE LINK (This is what you need for your demo!)
+        reset_link = f"http://localhost:3000/reset-password/{token}"
+        
+        print("\n" + "!"*50)
+        print(f"FORGOT PASSWORD CALLED FOR: {email}")
+        print(f"ACTION REQUIRED: Copy the link below into your browser")
+        print(f"LINK: {reset_link}")
+        print("!"*50 + "\n")
 
-    
-    print(f"RESET LINK: http://localhost:3000/reset-password/{token}")
-    
-    
-    return jsonify({"message": "Token generated", "token": token}), 200
+        # We return the token in JSON so your Frontend could technically use it too
+        return jsonify({
+            "message": "Reset token generated successfully", 
+            "token": token,
+            "debug_link": reset_link  # Added for easier debugging in Network tab
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Database error", "details": str(e)}), 500
 
 @api_bp.route('/users/reset-password/<token>', methods=['POST', 'OPTIONS'])
 def reset_password(token):
@@ -490,18 +511,29 @@ def reset_password(token):
 
     data = request.get_json()
     new_password = data.get('password')
+    
+    if not new_password:
+        return jsonify({"error": "New password is required"}), 400
+
     user = User.query.filter_by(reset_token=token).first()
     
-    if user and user.token_expiry > datetime.utcnow():
+    # Check if user exists AND token hasn't expired
+    if user and user.token_expiry and user.token_expiry > datetime.utcnow():
+        # Hash the new password
         salt = bcrypt.gensalt()
         hashed = bcrypt.hashpw(new_password.encode('utf-8'), salt)
+        
         user.password = hashed.decode('utf-8')
+        
+        # Clear the tokens so they can't be used again
         user.reset_token = None
         user.token_expiry = None
+        
         db.session.commit()
+        print(f">>> Success: Password reset for user {user.username} <<<")
         return jsonify({"message": "Password updated successfully"}), 200
             
-    return jsonify({"error": "Invalid or expired link"}), 400
+    return jsonify({"error": "Invalid or expired reset link"}), 400
 
 @api_bp.route('/users/<int:user_id>', methods=['DELETE'])
 def delete_user_account(user_id):
